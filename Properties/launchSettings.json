@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LogConverter": {
+      "commandName": "Project",
+      "commandLineArgs": "\"G:\\Steam\\steamapps\\common\\Tom Clancy's Splinter Cell Blacklist\\src\\SYSTEM\\FrameAnalysis-2020-06-15-175200\\log.txt\""
+    }
+  }
+}

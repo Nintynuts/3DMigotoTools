@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogConverter", "LogConverter.csproj", "{71E0E086-3F0A-4859-9B3D-521E170431E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogParser", "..\LogParser\LogParser.csproj", "{60FFDE41-751E-4762-A7B1-4D1FE750EB60}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{71E0E086-3F0A-4859-9B3D-521E170431E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71E0E086-3F0A-4859-9B3D-521E170431E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71E0E086-3F0A-4859-9B3D-521E170431E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71E0E086-3F0A-4859-9B3D-521E170431E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60FFDE41-751E-4762-A7B1-4D1FE750EB60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60FFDE41-751E-4762-A7B1-4D1FE750EB60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60FFDE41-751E-4762-A7B1-4D1FE750EB60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60FFDE41-751E-4762-A7B1-4D1FE750EB60}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2454861E-8980-4BFF-B41A-D78B3B02D119}
+	EndGlobalSection
+EndGlobal
