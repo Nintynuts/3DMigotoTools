@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogConverter", "LogConverter.csproj", "{71E0E086-3F0A-4859-9B3D-521E170431E9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogConverter", "LogConverter\LogConverter.csproj", "{71E0E086-3F0A-4859-9B3D-521E170431E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogParser", "..\LogParser\LogParser.csproj", "{60FFDE41-751E-4762-A7B1-4D1FE750EB60}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogParser", "LogParser\LogParser.csproj", "{60FFDE41-751E-4762-A7B1-4D1FE750EB60}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
