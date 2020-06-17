@@ -43,7 +43,7 @@ namespace Migoto.Log.Parser
         public Dictionary<string, Shader> Shaders { get; } = new Dictionary<string, Shader>();
 
         private uint frameNo = 0;
-        private Frame frame = new Frame();
+        private Frame frame = new Frame(0); // For Present post logic
         private uint drawCallNo = 0;
         private DrawCall drawCall = null;
         private DriverCall.Base driverCall = null;
@@ -95,24 +95,51 @@ namespace Migoto.Log.Parser
             LogUnhandledForDrawCall();
             LogUnhandledForFrame();
 
+            SimplifyLogic();
+
             return Frames;
+        }
+
+        private void SimplifyLogic()
+        {
+            var replacements = new List<(Regex find, string with)> { 
+                //Simplify scope name
+                (find:new Regex(@"[cC]onfigs\\(.*?)\.ini"), with: "$1"),
+                // Combine command and inspection 
+                (find:new Regex(@"(?<!pre|post) (\[.*?\] .*)(?<!else \{|true|false)(?:[\r\n]+\s+)(?!else|\[|\})([^ ].*)(?=[\r\n])"), with: " $1 : $2"),
+                // Copy scope after pre / post
+                (find: new Regex(@"(pre|post) {(?=[\r\n]+\s+(\[.*?\]))"), with: "$1 $2 {"),
+                // Remove repeated scopes
+                (find: new Regex(@"(?<!pre|post) (\[.*?\])"), with: ""),
+                // Remove zero fractionals
+                (find: new Regex(@"(\d+)\.0+\b"), with: "$1"),
+                // Simplify assignment inspection
+                (find: new Regex(@"(?<=:)( ini param override)? ="), with: ""),
+                // Remove constant inspection
+                (find: new Regex(@" = (-?\d+(?:\.\d+)?) : \1"), with: " = $1"),
+                // Remove Empty Else-EndIf
+                (find: new Regex(@"(?:([\r\n]\s+)else \{\1\})? endif"), with: ""),
+            };
+
+            Frames.SelectMany(f => f.DrawCalls).Where(dc => dc.Logic != null).ForEach(dc => replacements.ForEach(r => dc.Logic = r.find.Replace(dc.Logic, r.with)));
         }
 
         private void ProcessFrameAndDrawCall(GroupCollection captures)
         {
+            if (captures["frame"].Success && uint.TryParse(captures["frame"].Value, out var thisFrameNo) && thisFrameNo != frameNo)
+            {
+                LogUnhandledForFrame();
+                frameNo = thisFrameNo;
+                frame = new Frame(thisFrameNo);
+                drawCall = null; // sever fallback to previous frame
+                Frames.Add(frame);
+            }
             if (uint.TryParse(captures["drawcall"].Value, out var thisDrawCallNo) && thisDrawCallNo != drawCallNo)
             {
                 LogUnhandledForDrawCall();
                 drawCallNo = thisDrawCallNo;
                 drawCall = new DrawCall(thisDrawCallNo, drawCall);
                 frame.DrawCalls.Add(drawCall);
-            }
-            if (captures["frame"].Success && uint.TryParse(captures["frame"].Value, out var thisFrameNo) && thisFrameNo != frameNo)
-            {
-                LogUnhandledForFrame();
-                frameNo = thisFrameNo;
-                frame = new Frame();
-                Frames.Add(frame);
             }
         }
 

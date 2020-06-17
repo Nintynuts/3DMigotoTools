@@ -7,16 +7,16 @@ using Migoto.Log.Parser.DriverCall;
 namespace Migoto.Log.Parser
 {
 
-    public class DrawCall
+    public class DrawCall : IDeferred<DrawCall>
     {
-        private Deferred<DrawCall> props;
+        public Deferred<DrawCall> Deferred { get; }
 
-        private Dictionary<ShaderType, ShaderContext> lookup;
+        private readonly Dictionary<ShaderType, ShaderContext> lookup;
 
         public DrawCall(uint index, DrawCall previous)
         {
             Index = index;
-            props = new Deferred<DrawCall>(previous);
+            Deferred = new Deferred<DrawCall>(previous);
             PixelShader = new ShaderContext(ShaderType.Pixel, this, previous?.PixelShader);
             VertexShader = new ShaderContext(ShaderType.Vertex, this, previous?.VertexShader);
             ComputeShader = new ShaderContext(ShaderType.Compute, this, previous?.ComputeShader);
@@ -36,25 +36,25 @@ namespace Migoto.Log.Parser
         public List<Map> Mappings { get; } = new List<Map>();
         public List<Unmap> Unmappings { get; } = new List<Unmap>();
 
-        public CopySubresourceRegion SubresourceRegionCopied { get => props.Get<CopySubresourceRegion>(false); set => props.Set(value); }
+        public CopySubresourceRegion SubresourceRegionCopied { get => Deferred.Get<CopySubresourceRegion>(false); set => Deferred.Set(value); }
         public List<ClearDepthStencilView> DepthStencilCleared { get; } = new List<ClearDepthStencilView>();
         public List<ClearRenderTargetView> RenderTargetCleared { get; } = new List<ClearRenderTargetView>();
 
-        public RSSetState RasterizerState { get => props.Get<RSSetState>(); set => props.Set(value); }
+        public RSSetState RasterizerState { get => Deferred.Get<RSSetState>(); set => Deferred.Set(value); }
         public List<RSSetViewports> Viewports { get; } = new List<RSSetViewports>();
 
-        public OMSetRenderTargets SetRenderTargets { get => props.Get<OMSetRenderTargets>(); set => props.Set(value); }
-        public OMSetBlendState BlendState { get => props.Get<OMSetBlendState>(); set => props.Set(value); }
-        public OMSetDepthStencilState DepthStencilState { get => props.Get<OMSetDepthStencilState>(); set => props.Set(value); }
-        public OMGetRenderTargetsAndUnorderedAccessViews GetRTsAndUAVs { get => props.Get<OMGetRenderTargetsAndUnorderedAccessViews>(false); set => props.Set(value); }
+        public OMSetRenderTargets SetRenderTargets { get => Deferred.Get<OMSetRenderTargets>(); set => Deferred.Set(value); }
+        public OMSetBlendState BlendState { get => Deferred.Get<OMSetBlendState>(); set => Deferred.Set(value); }
+        public OMSetDepthStencilState DepthStencilState { get => Deferred.Get<OMSetDepthStencilState>(); set => Deferred.Set(value); }
+        public OMGetRenderTargetsAndUnorderedAccessViews GetRTsAndUAVs { get => Deferred.Get<OMGetRenderTargetsAndUnorderedAccessViews>(false); set => Deferred.Set(value); }
 
-        public IASetPrimitiveTopology PrimitiveTopology { get => props.Get<IASetPrimitiveTopology>(); set => props.Set(value); }
+        public IASetPrimitiveTopology PrimitiveTopology { get => Deferred.Get<IASetPrimitiveTopology>(); set => Deferred.Set(value); }
 
-        public IASetInputLayout InputLayout { get => props.Get<IASetInputLayout>(); set => props.Set(value); }
+        public IASetInputLayout InputLayout { get => Deferred.Get<IASetInputLayout>(); set => Deferred.Set(value); }
 
-        public List<IASetVertexBuffers> VertexBuffers { get; } = new List<IASetVertexBuffers>();
+        public List<IASetVertexBuffers> SetVertexBuffers { get; } = new List<IASetVertexBuffers>();
 
-        public List<IASetIndexBuffer> IndexBuffer { get; } = new List<IASetIndexBuffer>();
+        public List<IASetIndexBuffer> SetIndexBuffer { get; } = new List<IASetIndexBuffer>();
 
         public ShaderContext PixelShader { get; set; }
         public ShaderContext VertexShader { get; set; }

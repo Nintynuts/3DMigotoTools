@@ -4,9 +4,14 @@ using System.Runtime.CompilerServices;
 
 namespace Migoto.Log.Parser
 {
-    public class Deferred<T>
+    public interface IDeferred<T> where T : IDeferred<T>
     {
-        private Dictionary<string, object> Overrides { get; } = new Dictionary<string, object>();
+        Deferred<T> Deferred { get; }
+    }
+
+    public class Deferred<T> where T : IDeferred<T>
+    {
+        protected Dictionary<string, object> Overrides { get; } = new Dictionary<string, object>();
 
         private T Fallback { get; }
 
@@ -21,7 +26,14 @@ namespace Migoto.Log.Parser
             if (Overrides.ContainsKey(name))
                 return (TProperty)Overrides[name];
             else if (useFallback && Fallback != null)
-                return (TProperty)typeof(T).GetProperty(name).GetValue(Fallback);
+            {
+                // This way avoids stack overflow
+                var fallback = Fallback;
+                while (!Fallback.Deferred.Overrides.ContainsKey(name) && fallback.Deferred.Fallback != null)
+                    fallback = fallback.Deferred.Fallback;
+
+                return fallback.Deferred.Get<TProperty>(false, name);
+            }
             else
                 return null;
         }

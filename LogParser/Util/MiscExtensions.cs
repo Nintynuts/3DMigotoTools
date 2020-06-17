@@ -5,8 +5,14 @@ using System.Reflection;
 
 namespace Migoto.Log.Parser
 {
-    public static class ReflectionExtensions
+    public static class MiscExtensions
     {
+        public static void ForEach<T>(this IEnumerable<T> items, Action<T> action)
+        {
+            foreach (var item in items)
+                action(item);
+        }
+
         public static bool TryGetValue<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, out TValue? value)
             where TValue : struct
         {
