@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -26,22 +25,21 @@ namespace Migoto.Log.Parser
                 frame.DrawCalls.ForEach(drawCall =>
                 {
                     var IndexBuffers = drawCall.SetIndexBuffer.Where(ib => ib.Buffer != null).Select(ib => new Resource(null) { Index = (int)ib.Offset, Asset = ib.Buffer }).ToList();
-                    var VertexBuffers = drawCall.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers);
                     var columns = new string[][] {
                         new[] { $"{frame.Index}", $"{drawCall.Index:000000}" },
-                        (null as DriverCall.Base).ToStrings(_ => IndexBuffers,1),
-                        (null as DriverCall.Base).ToStrings(_ => VertexBuffers,2),
+                        IndexBuffers.ToStrings(1),
+                        drawCall.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers).ToStrings(2),
                         // Vertex Shader
                         new[]{ $"{drawCall.VertexShader.SetShader.Shader.Hash:X}" },
-                        drawCall.VertexShader.SetConstantBuffers.ToStrings(dc => dc?.ConstantBuffers,14),
-                        //drawCall.VertexShader.SetShaderResources.ToStrings(dc => dc?.ResourceViews),
+                        drawCall.VertexShader.SetConstantBuffers.ConstantBuffers.ToStrings(14),
+                        //drawCall.VertexShader.SetShaderResources.ResourceViews.ToStrings(),
                         // Pixel Shader
                         new[]{ $"{drawCall.PixelShader.SetShader.Shader.Hash:X}" },
-                        drawCall.PixelShader.SetConstantBuffers.ToStrings(dc => dc?.ConstantBuffers,14),
-                        drawCall.PixelShader.SetShaderResources.ToStrings(dc => dc?.ResourceViews),
+                        drawCall.PixelShader.SetConstantBuffers.ConstantBuffers.ToStrings(14),
+                        drawCall.PixelShader.SetShaderResources.ResourceViews.ToStrings(),
                         // Render Targets
-                        drawCall.SetRenderTargets.ToStrings(dc => dc?.RenderTargets, 4),
-                        new[]{ drawCall.SetRenderTargets.DepthStencil == null? string.Empty : $"D:{drawCall.SetRenderTargets.DepthStencil.Asset.Hash:X}" },
+                        drawCall.SetRenderTargets.RenderTargets.ToStrings(4),
+                        new[]{ drawCall.SetRenderTargets.DepthStencil == null? string.Empty : $"{drawCall.SetRenderTargets.DepthStencil.Asset.Hash:X}" },
                     };
                     output.Write(columns.SelectMany(s => s).ToCSV());
                     output.WriteLine($",\"{drawCall.Logic}\"");
@@ -55,10 +53,9 @@ namespace Migoto.Log.Parser
 
     static class ConverterExtensions
     {
-        public static string[] ToStrings<TDriverCall, TResource>(this TDriverCall driverCall, Func<TDriverCall, IEnumerable<TResource>> items, int count = 16)
-            where TDriverCall : DriverCall.Base
+        public static string[] ToStrings<TResource>(this IEnumerable<TResource> items, int count = 16)
             where TResource : Resource
-            => Enumerable.Range(0, count).Select(i => $"{items(driverCall)?.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}").ToArray();
+            => Enumerable.Range(0, count).Select(i => $"{items?.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}").ToArray();
 
         public static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");
     }
