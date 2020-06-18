@@ -1,13 +1,59 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
+using Migoto.Log.Parser.Asset;
 using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser
 {
     class Program
     {
+        private class ColumnSet
+        {
+            private readonly string name;
+
+            private readonly Func<DrawCall, object> columns;
+
+            private readonly int max;
+
+            public ColumnSet(string name, Func<DrawCall, object> columns, IEnumerable<Frame> frames)
+            {
+                this.name = name;
+                this.columns = columns;
+                max = frames.SelectMany(f => f.DrawCalls).Max(dc => GetIndex(columns(dc)));
+            }
+
+            private int GetIndex(object v)
+            {
+                if (v is IEnumerable<IResource> resources && resources.Any())
+                    return resources.Max(r => r.Index);
+                return -1;
+            }
+
+            public IEnumerable<string> Slots()
+            {
+                return max == -1 ? new[] { name } : Enumerable.Range(0, max + 1).Select(i => $"{name}{i}");
+            }
+
+            public IEnumerable<string> GetHashes(DrawCall dc)
+            {
+                var item = columns(dc);
+                if (item == null)
+                    return new[] { string.Empty };
+                if (item is IEnumerable<IResource> resources && max != -1)
+                    return Enumerable.Range(0, max + 1).Select(i => $"{resources.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}");
+                if (item is Base asset)
+                    return new[] { $"{asset.Hash:X}" };
+                if (item is Shader shader)
+                    return new[] { $"{shader.Hash:X}" };
+
+                throw new ArgumentException("Unexpected type, cannot generate a hash!");
+            }
+        }
+
         static void Main(string[] args)
         {
             var file = new StreamReader(args[0]);
@@ -18,42 +64,39 @@ namespace Migoto.Log.Parser
 
             var output = new StreamWriter(args[0].Replace(".txt", ".csv"));
 
-            output.WriteLine($"Frame,Draw,{Slots("ib", 1).ToCSV()},{Slots("vb", 2).ToCSV()},VS,{Slots("cb", 14).ToCSV()}," +/*$"{Slots("t").ToCSV()},"+*/$"PS,{Slots("cb", 14).ToCSV()},{Slots("t").ToCSV()},{Slots("rt", 4).ToCSV()},rtD");
+            var columns = new ColumnSet[] {
+                new ColumnSet("ib", dc => dc.SetIndexBuffer.Where(ib => ib.Buffer != null), frames),
+                new ColumnSet("vb", dc => dc.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers), frames),
+                // Vertex Shader
+                new ColumnSet("vs", dc => dc.VertexShader.SetShader?.Shader, frames),
+                new ColumnSet("cb", dc => dc.VertexShader.SetConstantBuffers?.ConstantBuffers, frames),
+                new ColumnSet("t" , dc => dc.VertexShader.SetShaderResources?.ResourceViews, frames),
+                // Pixel Shader
+                new ColumnSet("ps", dc => dc.PixelShader.SetShader?.Shader, frames),
+                new ColumnSet("cb", dc => dc.PixelShader.SetConstantBuffers?.ConstantBuffers, frames),
+                new ColumnSet("t" , dc => dc.PixelShader.SetShaderResources?.ResourceViews, frames),
+                // Render Targets
+                new ColumnSet("o", dc => dc.SetRenderTargets?.RenderTargets, frames),
+                new ColumnSet("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset , frames),
+            };
+
+            output.WriteLine($"Frame,Draw,{columns.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
+
+            var logicSplit = new Regex(@"(?<! )(?=post)");
 
             frames.ForEach(frame =>
             {
                 frame.DrawCalls.ForEach(drawCall =>
                 {
-                    var columns = new string[][] {
-                        drawCall.SetIndexBuffer.Where(ib => ib.Buffer != null).ToStrings(1),
-                        drawCall.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers).ToStrings(2),
-                        // Vertex Shader
-                        new[]{ $"{drawCall.VertexShader.SetShader.Shader.Hash:X}" },
-                        drawCall.VertexShader.SetConstantBuffers.ConstantBuffers.ToStrings(14),
-                        //drawCall.VertexShader.SetShaderResources.ResourceViews.ToStrings(),
-                        // Pixel Shader
-                        new[]{ $"{drawCall.PixelShader.SetShader.Shader.Hash:X}" },
-                        drawCall.PixelShader.SetConstantBuffers.ConstantBuffers.ToStrings(14),
-                        drawCall.PixelShader.SetShaderResources.ResourceViews.ToStrings(),
-                        // Render Targets
-                        drawCall.SetRenderTargets.RenderTargets.ToStrings(4),
-                        new[]{ drawCall.SetRenderTargets.DepthStencil == null? string.Empty : $"{drawCall.SetRenderTargets.DepthStencil.Asset.Hash:X}" },
-                    };
-                    output.Write($"{frame.Index},{drawCall.Index:000000},{columns.SelectMany(s => s).ToCSV()}");
-                    output.WriteLine($",\"{drawCall.Logic}\"");
+                    output.WriteLine($"{frame.Index},{drawCall.Index:000000},{columns.SelectMany(c => c.GetHashes(drawCall)).ToCSV()},\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
                 });
             });
             output.Close();
         }
-
-        private static IEnumerable<string> Slots(string type, int count = 16) => Enumerable.Range(0, count).Select(i => $"{type}{i}");
     }
 
     static class ConverterExtensions
     {
-        public static string[] ToStrings(this IEnumerable<IResource> items, int count = 16)
-            => Enumerable.Range(0, count).Select(i => $"{items?.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}").ToArray();
-
         public static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");
     }
 }
