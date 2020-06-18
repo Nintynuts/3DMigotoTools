@@ -6,47 +6,53 @@ using System.Text.RegularExpressions;
 
 using Migoto.Log.Parser;
 using Migoto.Log.Parser.Asset;
+using Migoto.Log.Parser.DriverCall;
 using Migoto.Log.Parser.Slot;
+
 
 namespace Migoto.Log.Converter
 {
+    using Asset = Parser.Asset.Base;
+
     public static class CsvWriter
     {
         private class HashColumnSet
         {
             private readonly string name;
 
-            private readonly Func<DrawCall, object> columns;
+            private readonly Func<DrawCall, object> items;
 
             private readonly int max;
 
-            public HashColumnSet(string name, Func<DrawCall, object> columns, IEnumerable<Frame> frames)
+            private IEnumerable<int> Columns => Enumerable.Range(0, max);
+
+            public HashColumnSet(string name, Func<DrawCall, object> items, IEnumerable<Frame> frames)
             {
                 this.name = name;
-                this.columns = columns;
-                max = frames.SelectMany(f => f.DrawCalls).Max(dc => GetIndex(columns(dc)));
+                this.items = items;
+                max = frames.SelectMany(f => f.DrawCalls).Max(dc => GetIndex(items(dc))) + 1;
             }
 
             private int GetIndex(object v)
             {
                 if (v is IEnumerable<IResource> resources && resources.Any())
                     return resources.Max(r => r.Index);
-                return -1;
+                return 0;
             }
 
             public IEnumerable<string> Slots()
             {
-                return max == -1 ? new[] { name } : Enumerable.Range(0, max + 1).Select(i => $"{name}{i}");
+                return max == 1 ? new[] { name } : Columns.Select(i => $"{name}{i}");
             }
 
             public IEnumerable<string> GetHashes(DrawCall dc)
             {
-                var item = columns(dc);
+                var item = items(dc);
                 if (item == null)
-                    return new[] { string.Empty };
-                if (item is IEnumerable<IResource> resources && max != -1)
-                    return Enumerable.Range(0, max + 1).Select(i => $"{resources.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}");
-                if (item is Base asset)
+                    return Columns.Select(i => string.Empty);
+                if (item is IEnumerable<IResource> resources)
+                    return Columns.Select(i => $"{resources.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}");
+                if (item is Asset asset)
                     return new[] { $"{asset.Hash:X}" };
                 if (item is Shader shader)
                     return new[] { $"{shader.Hash:X}" };
@@ -59,23 +65,32 @@ namespace Migoto.Log.Converter
         {
             var output = new StreamWriter(fileName);
 
-            var columns = new HashColumnSet[] {
+            var buffers = new HashColumnSet[] {
                 new HashColumnSet("ib", dc => dc.SetIndexBuffer.Where(ib => ib.Buffer != null), frames),
                 new HashColumnSet("vb", dc => dc.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers), frames),
-                // Vertex Shader
-                new HashColumnSet("vs", dc => dc.VertexShader.SetShader?.Shader, frames),
-                new HashColumnSet("cb", dc => dc.VertexShader.SetConstantBuffers?.ConstantBuffers, frames),
-                new HashColumnSet("t" , dc => dc.VertexShader.SetShaderResources?.ResourceViews, frames),
-                // Pixel Shader
-                new HashColumnSet("ps", dc => dc.PixelShader.SetShader?.Shader, frames),
-                new HashColumnSet("cb", dc => dc.PixelShader.SetConstantBuffers?.ConstantBuffers, frames),
-                new HashColumnSet("t" , dc => dc.PixelShader.SetShaderResources?.ResourceViews, frames),
-                // Render Targets
+            };
+
+            HashColumnSet[] ShaderColumns(ShaderType shaderType)
+            {
+                char x = shaderType.ToString().ToLower()[0];
+                return new[]
+                {
+                    new HashColumnSet($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader), frames),
+                    new HashColumnSet($"{x}s-cb", dc => (dc.Shader(shaderType).SetConstantBuffers?.ConstantBuffers), frames),
+                    new HashColumnSet($"{x}s-t" , dc => (dc.Shader(shaderType).SetShaderResources?.ResourceViews), frames),
+                };
+            }
+
+            var shaders = new[] { ShaderType.Vertex, ShaderType.Pixel }.SelectMany(ShaderColumns);
+
+            var outputs = new HashColumnSet[] {
                 new HashColumnSet("o", dc => dc.SetRenderTargets?.RenderTargets, frames),
                 new HashColumnSet("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset , frames),
             };
 
-            output.WriteLine($"Frame,Draw,{columns.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
+            var hashes = new[] { buffers, shaders, outputs }.SelectMany(c => c).ToList();
+
+            output.WriteLine($"Frame,Draw,{hashes.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
 
             var logicSplit = new Regex(@"(?<! )(?=post)");
 
@@ -83,7 +98,7 @@ namespace Migoto.Log.Converter
             {
                 frame.DrawCalls.ForEach(drawCall =>
                 {
-                    output.WriteLine($"{frame.Index},{drawCall.Index:000000},{columns.SelectMany(c => c.GetHashes(drawCall)).ToCSV()},\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
+                    output.WriteLine($"{frame.Index},{drawCall.Index},{hashes.SelectMany(c => c.GetHashes(drawCall)).ToCSV()},\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
                 });
             });
             output.Close();

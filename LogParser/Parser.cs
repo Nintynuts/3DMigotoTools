@@ -45,13 +45,14 @@ namespace Migoto.Log.Parser
         private uint frameNo = 0;
         private Frame frame = new Frame(0); // For Present post logic
         private uint drawCallNo = 0;
-        private DrawCall drawCall = null;
+        private DrawCall drawCall = new DrawCall(0, null);
         private DriverCall.Base driverCall = null;
 
         public Parser(StreamReader stream)
         {
             this.stream = stream;
             Frames.Add(frame);
+            frame.DrawCalls.Add(drawCall);
         }
 
         public List<Frame> Parse()
@@ -63,13 +64,13 @@ namespace Migoto.Log.Parser
             {
                 var line = stream.ReadLine();
 
-                var indexMatch = indexPattern.Match(line);
-                if (indexMatch.Success)
-                    ProcessFrameAndDrawCall(indexMatch.Groups);
-
                 var driverCallMatch = methodPattern.Match(line);
                 if (driverCallMatch.Success)
                 {
+                    var indexMatch = indexPattern.Match(line);
+                    if (indexMatch.Success)
+                        ProcessFrameAndDrawCall(indexMatch.Groups);
+
                     ProcessDriverCall(driverCallMatch.Groups);
                     continue;
                 }
