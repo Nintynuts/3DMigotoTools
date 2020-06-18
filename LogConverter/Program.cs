@@ -24,10 +24,8 @@ namespace Migoto.Log.Parser
             {
                 frame.DrawCalls.ForEach(drawCall =>
                 {
-                    var IndexBuffers = drawCall.SetIndexBuffer.Where(ib => ib.Buffer != null).Select(ib => new Resource(null) { Index = (int)ib.Offset, Asset = ib.Buffer }).ToList();
                     var columns = new string[][] {
-                        new[] { $"{frame.Index}", $"{drawCall.Index:000000}" },
-                        IndexBuffers.ToStrings(1),
+                        drawCall.SetIndexBuffer.Where(ib => ib.Buffer != null).ToStrings(1),
                         drawCall.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers).ToStrings(2),
                         // Vertex Shader
                         new[]{ $"{drawCall.VertexShader.SetShader.Shader.Hash:X}" },
@@ -41,7 +39,7 @@ namespace Migoto.Log.Parser
                         drawCall.SetRenderTargets.RenderTargets.ToStrings(4),
                         new[]{ drawCall.SetRenderTargets.DepthStencil == null? string.Empty : $"{drawCall.SetRenderTargets.DepthStencil.Asset.Hash:X}" },
                     };
-                    output.Write(columns.SelectMany(s => s).ToCSV());
+                    output.Write($"{frame.Index},{drawCall.Index:000000},{columns.SelectMany(s => s).ToCSV()}");
                     output.WriteLine($",\"{drawCall.Logic}\"");
                 });
             });
@@ -53,8 +51,7 @@ namespace Migoto.Log.Parser
 
     static class ConverterExtensions
     {
-        public static string[] ToStrings<TResource>(this IEnumerable<TResource> items, int count = 16)
-            where TResource : Resource
+        public static string[] ToStrings(this IEnumerable<IResource> items, int count = 16)
             => Enumerable.Range(0, count).Select(i => $"{items?.FirstOrDefault(r => r.Index == i)?.Asset.Hash:X}").ToArray();
 
         public static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");

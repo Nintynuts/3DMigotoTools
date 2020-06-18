@@ -2,7 +2,7 @@
 
 namespace Migoto.Log.Parser.Slot
 {
-    public class Resource
+    public class Resource : IResource
     {
         public uint Pointer { get; set; }
 

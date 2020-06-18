@@ -1,8 +1,9 @@
 ﻿using Migoto.Log.Parser.Asset;
+using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public class IASetIndexBuffer : Base
+    public class IASetIndexBuffer : Base, IResource
     {
         public IASetIndexBuffer(DrawCall owner) : base(owner)
         {
@@ -13,5 +14,11 @@ namespace Migoto.Log.Parser.DriverCall
         public uint Offset { get; set; }
 
         public Buffer Buffer { get; set; }
+
+
+        public Asset.Base Asset => Buffer;
+        public int Index => (int)Offset;
+        public uint Pointer => pIndexBuffer;
+        Base IResource.Owner => this;
     }
 }
