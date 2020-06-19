@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using Migoto.Log.Parser.DriverCall;
+using Migoto.Log.Parser.DriverCall.Draw;
 
 namespace Migoto.Log.Parser
 {
@@ -23,13 +24,13 @@ namespace Migoto.Log.Parser
 
         public string Logic { get; set; }
 
-        public Draw Draw { get; set; }
-        public DrawIndexed DrawIndexed { get; set; }
+        public IDraw Draw { get; set; }
 
         public List<Map> Mappings { get; } = new List<Map>();
         public List<Unmap> Unmappings { get; } = new List<Unmap>();
 
-        public CopySubresourceRegion SubresourceRegionCopied { get => Deferred.Get<CopySubresourceRegion>(false); set => Deferred.Set(value); }
+        public List<CopyResource> ResourceCopied { get; } = new List<CopyResource>();
+        public List<CopySubresourceRegion> SubresourceRegionCopied { get; } = new List<CopySubresourceRegion>();
         public List<ClearDepthStencilView> DepthStencilCleared { get; } = new List<ClearDepthStencilView>();
         public List<ClearRenderTargetView> RenderTargetCleared { get; } = new List<ClearRenderTargetView>();
 

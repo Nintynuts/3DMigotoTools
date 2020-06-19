@@ -8,9 +8,9 @@ namespace Migoto.Log.Parser.DriverCall
         {
         }
 
-        public uint pShader { get; set; }
+        public ulong pShader { get; set; }
 
-        public uint ppClassInstances { get; set; }
+        public ulong ppClassInstances { get; set; }
 
         public uint NumClassInstances { get; set; }
 

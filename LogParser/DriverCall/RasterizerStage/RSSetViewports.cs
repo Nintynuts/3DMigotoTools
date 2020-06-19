@@ -1,4 +1,8 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿using System.Collections.Generic;
+
+using Migoto.Log.Parser.Slot;
+
+namespace Migoto.Log.Parser.DriverCall
 {
     public class RSSetViewports : Base
     {
@@ -7,6 +11,8 @@
         }
 
         public uint NumViewports { get; set; }
-        public uint pViewports { get; set; }
+        public ulong pViewports { get; set; }
+
+        public List<ResourceView> Viewports { get; } = new List<ResourceView>();
     }
 }

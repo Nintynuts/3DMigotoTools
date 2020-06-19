@@ -6,6 +6,6 @@
         {
         }
 
-        public uint pInputLayout { get; set; }
+        public ulong pInputLayout { get; set; }
     }
 }

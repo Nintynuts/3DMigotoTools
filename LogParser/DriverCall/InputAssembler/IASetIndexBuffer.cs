@@ -9,7 +9,7 @@ namespace Migoto.Log.Parser.DriverCall
         {
         }
 
-        public uint pIndexBuffer { get; set; }
+        public ulong pIndexBuffer { get; set; }
         public uint Format { get; set; }
         public uint Offset { get; set; }
 
@@ -17,7 +17,7 @@ namespace Migoto.Log.Parser.DriverCall
 
         Asset.Base IResource.Asset => Buffer;
         int IResource.Index => (int)Offset;
-        uint IResource.Pointer => pIndexBuffer;
+        ulong IResource.Pointer => pIndexBuffer;
         Base IResource.Owner => this;
 
         public void UpdateAsset(Asset.Base asset) => Buffer = asset as Buffer;

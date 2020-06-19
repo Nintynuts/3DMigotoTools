@@ -6,6 +6,6 @@
         {
         }
 
-        public uint pRasterizerState { get; set; }
+        public ulong pRasterizerState { get; set; }
     }
 }

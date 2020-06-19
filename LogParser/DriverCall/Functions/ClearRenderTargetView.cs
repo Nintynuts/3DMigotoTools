@@ -6,7 +6,7 @@
         {
         }
 
-        public uint pRenderTargetView { get; set; }
-        public uint ColorRGBA { get; set; }
+        public ulong pRenderTargetView { get; set; }
+        public ulong ColorRGBA { get; set; }
     }
 }

@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 
 using Migoto.Log.Parser.Asset;
 using Migoto.Log.Parser.DriverCall;
+using Migoto.Log.Parser.DriverCall.Draw;
 using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser
@@ -183,20 +184,23 @@ namespace Migoto.Log.Parser
                 else
                 {
                     var assetProp = driverCall.AssetProperty;
-                    if (!Assets.TryGetValue(hash.Value, out var asset))
+                    if (!Assets.TryGetValue(hash.Value, out var asset) || asset is Unknown)
                     {
+                        var unknown = asset as Unknown;
+
                         if (assetProp.PropertyType != typeof(Asset.Base))
                             asset = assetProp.PropertyType.Construct<Asset.Base>();
-                        else
+                        else if (unknown == null)
                             asset = new Unknown();
 
-                        asset.SetFromString("Hash", hash.Value);
-                        Assets.Add(hash.Value, asset);
+                        RegisterAsset(hash.Value, asset, unknown);
                     }
                     asset.Uses.Add(driverCall as IResource);
                     driverCall.Set(assetProp, asset);
                 }
             }
+            if (typeof(IDraw).IsAssignableFrom(driverCallType))
+                driverCallType = typeof(IDraw);
             if (shaderType.HasValue && shaderContextProps.TryGetValue(driverCallType, out var property))
                 drawCall.Call(shader, shaderType.Value).Set(property, driverCall);
             else if (drawCallProps.TryGetValue(driverCallType, out property))
@@ -212,10 +216,10 @@ namespace Migoto.Log.Parser
         private void ProcessResourceSlot(GroupCollection captures)
         {
             string index = captures["index"].Value;
-            var useList = uint.TryParse(index, out var slotNo);
+            var useList = uint.TryParse(index, out var _);
 
-            PropertyInfo slots = null;
-            Type slotType = null;
+            PropertyInfo slots;
+            Type slotType;
 
             if (useList)
             {
@@ -241,24 +245,12 @@ namespace Migoto.Log.Parser
             {
                 var unknown = asset as Unknown;
 
-                Type driverCallType = driverCall.GetType();
                 if (slotType == typeof(ResourceView))
                     asset = new Texture();
                 else
                     asset = new Buffer();
 
-                asset.SetFromString(nameof(Asset.Base.Hash), hash);
-
-                if (unknown != null)
-                {
-                    asset.Uses.AddRange(unknown.Uses);
-                    unknown.Uses.ForEach(s => s.UpdateAsset(asset));
-                    Assets[hash] = asset;
-                }
-                else
-                {
-                    Assets.Add(hash, asset);
-                }
+                RegisterAsset(hash, asset, unknown);
             }
 
             slot.Set(slotType.GetProperty(nameof(Resource.Asset)), asset);
@@ -272,6 +264,22 @@ namespace Migoto.Log.Parser
             else
             {
                 driverCall.Set(slots, slot);
+            }
+        }
+
+        private void RegisterAsset(string hash, Asset.Base asset, Unknown unknown = null)
+        {
+            asset.SetFromString(nameof(Asset.Base.Hash), hash);
+
+            if (unknown != null)
+            {
+                asset.Uses.AddRange(unknown.Uses);
+                unknown.Uses.ForEach(s => s.UpdateAsset(asset));
+                Assets[hash] = asset;
+            }
+            else
+            {
+                Assets.Add(hash, asset);
             }
         }
 

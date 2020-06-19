@@ -6,7 +6,7 @@
         {
         }
 
-        public uint pDepthStencilState { get; set; }
+        public ulong pDepthStencilState { get; set; }
         public uint StencilRef { get; set; }
     }
 }

@@ -6,8 +6,8 @@
         {
         }
 
-        public uint pBlendState { get; set; }
-        public int BlendFactor { get; set; }
+        public ulong pBlendState { get; set; }
+        public ulong BlendFactor { get; set; }
         public uint SampleMask { get; set; }
     }
 }

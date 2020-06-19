@@ -14,7 +14,7 @@ namespace Migoto.Log.Parser.DriverCall
 
         public uint NumViews { get; set; }
 
-        public uint ppShaderResourceViews { get; set; }
+        public ulong ppShaderResourceViews { get; set; }
 
         public List<ResourceView> ResourceViews { get; set; } = new List<ResourceView>(16);
     }

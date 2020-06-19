@@ -2,6 +2,6 @@
 {
     public class Sampler
     {
-        public uint Handle { get; set; }
+        public ulong Handle { get; set; }
     }
 }

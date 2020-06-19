@@ -12,9 +12,9 @@ namespace Migoto.Log.Parser.DriverCall
 
         public uint StartSlot { get; set; }
         public uint NumBuffers { get; set; }
-        public uint ppVertexBuffers { get; set; }
-        public uint pStrides { get; set; }
-        public uint pOffsets { get; set; }
+        public ulong ppVertexBuffers { get; set; }
+        public ulong pStrides { get; set; }
+        public ulong pOffsets { get; set; }
 
         public List<Resource> VertexBuffers { get; } = new List<Resource>();
     }

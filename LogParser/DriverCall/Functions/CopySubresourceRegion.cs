@@ -1,12 +1,10 @@
 ﻿namespace Migoto.Log.Parser.DriverCall
 {
-    public class CopySubresourceRegion : Base
+    public class CopySubresourceRegion : CopyResource
     {
         public CopySubresourceRegion(uint order, DrawCall owner) : base(order, owner)
         {
         }
-
-        public uint pDstResource { get; set; }
 
         public uint DstSubresource { get; set; }
 
@@ -16,14 +14,8 @@
 
         public uint DstZ { get; set; }
 
-        public uint pSrcResource { get; set; }
-
         public uint SrcSubresource { get; set; }
 
-        public uint pSrcBox { get; set; }
-
-        public Slot.Resource Src { get; set; }
-
-        public Slot.Resource Dst { get; set; }
+        public ulong pSrcBox { get; set; }
     }
 }

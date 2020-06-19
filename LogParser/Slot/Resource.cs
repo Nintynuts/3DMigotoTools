@@ -4,7 +4,7 @@ namespace Migoto.Log.Parser.Slot
 {
     public class Resource : IResource
     {
-        public uint Pointer { get; set; }
+        public ulong Pointer { get; set; }
 
         public int Index { get; set; } = -1;
 

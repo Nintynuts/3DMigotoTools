@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Migoto.Log.Parser;
 using Migoto.Log.Parser.Asset;
 using Migoto.Log.Parser.DriverCall;
+using Migoto.Log.Parser.DriverCall.Draw;
 using Migoto.Log.Parser.Slot;
 
 
@@ -90,7 +91,7 @@ namespace Migoto.Log.Converter
 
             var hashes = new[] { buffers, shaders, outputs }.SelectMany(c => c).ToList();
 
-            output.WriteLine($"Frame,Draw,Topology,Vertices,Indices,{hashes.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
+            output.WriteLine($"Frame,Draw,Topology,Vertices,Indices,Instances,{hashes.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
 
             var logicSplit = new Regex(@"(?<! )(?=post)");
 
@@ -98,18 +99,20 @@ namespace Migoto.Log.Converter
             {
                 frame.DrawCalls.ForEach(drawCall =>
                 {
-                    var iaIndices = "";
-                    if (drawCall.Draw != null)
-                        iaIndices = $"{drawCall.Draw.StartVertexLocation}-{drawCall.Draw.VertexCount},?,";
-                    else if (drawCall.DrawIndexed != null)
-                        iaIndices = $"{drawCall.DrawIndexed.BaseVertexLocation}-?,{drawCall.DrawIndexed.StartIndexLocation}-{drawCall.DrawIndexed.IndexCount}";
-                    output.Write($"{frame.Index},{drawCall.Index},{drawCall.PrimitiveTopology?.Topology},{iaIndices},");
+                    output.Write($"{frame.Index},{drawCall.Index},{drawCall.PrimitiveTopology?.Topology},{GetDrawData(drawCall.Draw)},");
                     output.Write(hashes.SelectMany(c => c.GetHashes(drawCall)).ToCSV());
                     output.WriteLine($",\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
                 });
             });
             output.Close();
         }
+
+        private static string GetDrawData(IDraw draw)
+        {
+            return $"{draw?.StartVertex.AsString()}-{draw?.EndVertex.AsString()},{draw?.StartIndex.AsString()}-{draw?.EndIndex.AsString()},{draw?.StartInstance.AsString()}-{draw?.EndInstance.AsString()}";
+        }
+
+        private static string AsString(this uint? number) => number?.ToString() ?? "?";
 
         private static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");
     }

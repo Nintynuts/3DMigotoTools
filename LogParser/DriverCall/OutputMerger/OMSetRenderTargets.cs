@@ -11,8 +11,8 @@ namespace Migoto.Log.Parser.DriverCall
         }
 
         public uint NumViews { get; set; }
-        public uint ppRenderTargetViews { get; set; }
-        public uint pDepthStencilView { get; set; }
+        public ulong ppRenderTargetViews { get; set; }
+        public ulong pDepthStencilView { get; set; }
 
         public List<ResourceView> RenderTargets { get; } = new List<ResourceView>();
 
