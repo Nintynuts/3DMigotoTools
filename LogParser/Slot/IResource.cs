@@ -7,5 +7,7 @@ namespace Migoto.Log.Parser.Slot
         int Index { get; }
         DriverCall.Base Owner { get; }
         uint Pointer { get; }
+
+        void UpdateAsset(Asset.Base asset);
     }
 }

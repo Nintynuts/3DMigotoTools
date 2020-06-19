@@ -19,6 +19,6 @@ namespace Migoto.Log.Parser.DriverCall
             => GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(List<>));
 
         public PropertyInfo AssetProperty
-            => GetType().GetProperties().FirstOrDefault(p => typeof(Asset.Base).IsAssignableFrom(p.PropertyType));
+            => GetType().GetProperties().FirstOrDefault(p => p.CanWrite && typeof(Asset.Base).IsAssignableFrom(p.PropertyType));
     }
 }

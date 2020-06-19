@@ -193,7 +193,7 @@ namespace Migoto.Log.Parser
                         asset.SetFromString("Hash", hash.Value);
                         Assets.Add(hash.Value, asset);
                     }
-                    asset.DriverCalls.Add(driverCall);
+                    asset.Uses.Add(driverCall as IResource);
                     driverCall.Set(assetProp, asset);
                 }
             }
@@ -252,8 +252,7 @@ namespace Migoto.Log.Parser
                 if (unknown != null)
                 {
                     asset.Uses.AddRange(unknown.Uses);
-                    asset.DriverCalls.AddRange(unknown.DriverCalls);
-                    unknown.Uses.ForEach(s => s.Asset = asset);
+                    unknown.Uses.ForEach(s => s.UpdateAsset(asset));
                     Assets[hash] = asset;
                 }
                 else

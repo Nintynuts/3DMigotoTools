@@ -16,5 +16,7 @@ namespace Migoto.Log.Parser.Slot
         {
             Owner = owner;
         }
+
+        public void UpdateAsset(Asset.Base asset) => Asset = asset;
     }
 }
