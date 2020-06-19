@@ -6,7 +6,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class IASetVertexBuffers : Base
     {
-        public IASetVertexBuffers(DrawCall owner) : base(owner)
+        public IASetVertexBuffers(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

@@ -2,7 +2,7 @@
 {
     public class Map : Base
     {
-        public Map(DrawCall owner) : base(owner)
+        public Map(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

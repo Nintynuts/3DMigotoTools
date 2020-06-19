@@ -6,7 +6,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class SetShaderResources : Base
     {
-        public SetShaderResources(DrawCall owner) : base(owner)
+        public SetShaderResources(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

@@ -2,7 +2,7 @@
 {
     public class OMSetDepthStencilState : Base
     {
-        public OMSetDepthStencilState(DrawCall owner) : base(owner)
+        public OMSetDepthStencilState(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

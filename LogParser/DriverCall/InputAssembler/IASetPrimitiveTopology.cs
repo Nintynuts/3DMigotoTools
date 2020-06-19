@@ -2,7 +2,7 @@
 {
     public class IASetPrimitiveTopology : Base
     {
-        public IASetPrimitiveTopology(DrawCall owner) : base(owner)
+        public IASetPrimitiveTopology(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

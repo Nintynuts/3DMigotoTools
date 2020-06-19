@@ -2,7 +2,7 @@
 {
     public class OMGetRenderTargetsAndUnorderedAccessViews : Base
     {
-        public OMGetRenderTargetsAndUnorderedAccessViews(DrawCall owner) : base(owner)
+        public OMGetRenderTargetsAndUnorderedAccessViews(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

@@ -2,7 +2,7 @@
 {
     public class Unmap : Base
     {
-        public Unmap(DrawCall owner) : base(owner)
+        public Unmap(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

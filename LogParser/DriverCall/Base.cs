@@ -6,10 +6,12 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public abstract class Base
     {
+        public uint Order { get; }
         public DrawCall Owner { get; }
 
-        protected Base(DrawCall owner)
+        protected Base(uint order, DrawCall owner)
         {
+            Order = order;
             Owner = owner;
         }
 

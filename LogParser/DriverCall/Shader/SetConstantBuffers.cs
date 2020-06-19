@@ -6,7 +6,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class SetConstantBuffers : Base
     {
-        public SetConstantBuffers(DrawCall owner) : base(owner)
+        public SetConstantBuffers(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

@@ -2,7 +2,7 @@
 {
     public class DrawIndexed : Base
     {
-        public DrawIndexed(DrawCall owner) : base(owner)
+        public DrawIndexed(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

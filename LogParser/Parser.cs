@@ -45,6 +45,7 @@ namespace Migoto.Log.Parser
         private uint frameNo = 0;
         private Frame frame = new Frame(0); // For Present post logic
         private uint drawCallNo = 0;
+        private uint driverCallNo = 0;
         private DrawCall drawCall = new DrawCall(0, null);
         private DriverCall.Base driverCall = null;
 
@@ -139,6 +140,7 @@ namespace Migoto.Log.Parser
             {
                 LogUnhandledForDrawCall();
                 drawCallNo = thisDrawCallNo;
+                driverCallNo = 0;
                 drawCall = new DrawCall(thisDrawCallNo, drawCall);
                 frame.DrawCalls.Add(drawCall);
             }
@@ -154,7 +156,7 @@ namespace Migoto.Log.Parser
                 return;
             }
             ShaderTypes.TryGetValue(methodName[0], out ShaderType? shaderType);
-            driverCall = driverCallType.Construct<DriverCall.Base>(drawCall);
+            driverCall = driverCallType.Construct<DriverCall.Base>(driverCallNo, drawCall);
             var argsMatches = methodArgPattern.Match(captures["args"].Value);
             while (argsMatches.Success)
             {
@@ -203,6 +205,8 @@ namespace Migoto.Log.Parser
                 drawCall.Add(listProperty, driverCall);
             else
                 throw new InvalidOperationException($"DrawCall missing property for {methodName}");
+
+            driverCallNo++;
         }
 
         private void ProcessResourceSlot(GroupCollection captures)
@@ -247,9 +251,9 @@ namespace Migoto.Log.Parser
 
                 if (unknown != null)
                 {
-                    asset.Slots.AddRange(unknown.Slots);
+                    asset.Uses.AddRange(unknown.Uses);
                     asset.DriverCalls.AddRange(unknown.DriverCalls);
-                    unknown.Slots.ForEach(s => s.Asset = asset);
+                    unknown.Uses.ForEach(s => s.Asset = asset);
                     Assets[hash] = asset;
                 }
                 else
@@ -258,8 +262,8 @@ namespace Migoto.Log.Parser
                 }
             }
 
-            asset.Slots.Add(slot);
             slot.Set(slotType.GetProperty(nameof(Resource.Asset)), asset);
+            asset.Uses.Add(slot);
 
             if (useList)
             {

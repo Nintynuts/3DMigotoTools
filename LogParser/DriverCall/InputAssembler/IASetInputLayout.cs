@@ -2,7 +2,7 @@
 {
     public class IASetInputLayout : Base
     {
-        public IASetInputLayout(DrawCall owner) : base(owner)
+        public IASetInputLayout(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

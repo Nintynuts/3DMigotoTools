@@ -5,7 +5,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class IASetIndexBuffer : Base, IResource
     {
-        public IASetIndexBuffer(DrawCall owner) : base(owner)
+        public IASetIndexBuffer(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

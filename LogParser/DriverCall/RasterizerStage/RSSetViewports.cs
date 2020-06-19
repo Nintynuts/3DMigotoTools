@@ -2,7 +2,7 @@
 {
     public class RSSetViewports : Base
     {
-        public RSSetViewports(DrawCall owner) : base(owner)
+        public RSSetViewports(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

@@ -2,7 +2,7 @@
 {
     public class ClearDepthStencilView : Base
     {
-        public ClearDepthStencilView(DrawCall owner) : base(owner)
+        public ClearDepthStencilView(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

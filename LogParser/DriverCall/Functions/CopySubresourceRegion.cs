@@ -2,7 +2,7 @@
 {
     public class CopySubresourceRegion : Base
     {
-        public CopySubresourceRegion(DrawCall owner) : base(owner)
+        public CopySubresourceRegion(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

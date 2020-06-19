@@ -6,7 +6,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class OMSetRenderTargets : Base
     {
-        public OMSetRenderTargets(DrawCall owner) : base(owner)
+        public OMSetRenderTargets(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

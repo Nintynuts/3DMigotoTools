@@ -6,7 +6,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class SetSamplers : Base
     {
-        public SetSamplers(DrawCall owner) : base(owner)
+        public SetSamplers(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

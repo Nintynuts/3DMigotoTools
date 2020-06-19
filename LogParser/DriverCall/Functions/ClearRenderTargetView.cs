@@ -2,7 +2,7 @@
 {
     public class ClearRenderTargetView : Base
     {
-        public ClearRenderTargetView(DrawCall owner) : base(owner)
+        public ClearRenderTargetView(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

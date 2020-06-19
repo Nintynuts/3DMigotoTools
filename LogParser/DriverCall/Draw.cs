@@ -2,7 +2,7 @@
 {
     public class Draw : Base
     {
-        public Draw(DrawCall owner) : base(owner)
+        public Draw(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

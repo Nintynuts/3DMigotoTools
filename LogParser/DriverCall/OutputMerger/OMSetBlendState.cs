@@ -2,7 +2,7 @@
 {
     public class OMSetBlendState : Base
     {
-        public OMSetBlendState(DrawCall owner) : base(owner)
+        public OMSetBlendState(uint order, DrawCall owner) : base(order, owner)
         {
         }
 

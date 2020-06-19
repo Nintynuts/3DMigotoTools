@@ -2,7 +2,7 @@
 {
     public class RSSetState : Base
     {
-        public RSSetState(DrawCall owner) : base(owner)
+        public RSSetState(uint order, DrawCall owner) : base(order, owner)
         {
         }
 
