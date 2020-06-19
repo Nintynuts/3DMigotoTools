@@ -17,14 +17,7 @@ namespace Migoto.Log.Parser
         {
             Index = index;
             Deferred = new Deferred<DrawCall>(previous);
-            PixelShader = new ShaderContext(ShaderType.Pixel, this, previous?.PixelShader);
-            VertexShader = new ShaderContext(ShaderType.Vertex, this, previous?.VertexShader);
-            ComputeShader = new ShaderContext(ShaderType.Compute, this, previous?.ComputeShader);
-            DomainShader = new ShaderContext(ShaderType.Domain, this, previous?.DomainShader);
-            HullShader = new ShaderContext(ShaderType.Hull, this, previous?.HullShader);
-            GeometryShader = new ShaderContext(ShaderType.Geometry, this, previous?.GeometryShader);
-
-            lookup = new[] { PixelShader, VertexShader, ComputeShader, DomainShader, HullShader, GeometryShader }.ToDictionary(s => s.ShaderType, s => s);
+            lookup = Enums.Values<ShaderType>().ToDictionary(s => s, s => new ShaderContext(s, this, previous));
         }
         public uint Index { get; }
 
@@ -55,13 +48,6 @@ namespace Migoto.Log.Parser
         public List<IASetVertexBuffers> SetVertexBuffers { get; } = new List<IASetVertexBuffers>();
 
         public List<IASetIndexBuffer> SetIndexBuffer { get; } = new List<IASetIndexBuffer>();
-
-        public ShaderContext PixelShader { get; set; }
-        public ShaderContext VertexShader { get; set; }
-        public ShaderContext ComputeShader { get; set; }
-        public ShaderContext DomainShader { get; set; }
-        public ShaderContext HullShader { get; set; }
-        public ShaderContext GeometryShader { get; set; }
 
         public ShaderContext Shader(ShaderType type) => lookup[type];
     }

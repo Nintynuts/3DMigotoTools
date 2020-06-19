@@ -4,10 +4,10 @@
     {
         public Deferred<ShaderContext> Deferred { get; }
 
-        public ShaderContext(ShaderType shaderType, DrawCall owner, ShaderContext previous) : base(owner)
+        public ShaderContext(ShaderType shaderType, DrawCall owner, DrawCall previous) : base(owner)
         {
             ShaderType = shaderType;
-            Deferred = new Deferred<ShaderContext>(previous);
+            Deferred = new Deferred<ShaderContext>(previous?.Shader(shaderType));
         }
 
         public ShaderType ShaderType { get; }

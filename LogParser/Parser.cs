@@ -26,7 +26,7 @@ namespace Migoto.Log.Parser
 
         private readonly Dictionary<string, Type> driverCallTypes = typeof(DriverCall.Base).Assembly.GetTypes().Where(t => typeof(DriverCall.Base).IsAssignableFrom(t) && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
         private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.PropertyType != typeof(ShaderContext)).ToDictionary(p => p.PropertyType, p => p);
-        private readonly Dictionary<ShaderType, PropertyInfo> drawCallShaders = typeof(DrawCall).GetProperties().Where(p => p.PropertyType == typeof(ShaderContext)).ToDictionary(p => GetShaderType(p), p => p);
+        private readonly MethodInfo shader = typeof(DrawCall).GetMethod(nameof(DrawCall.Shader));
         private readonly Dictionary<Type, PropertyInfo> shaderContextProps = typeof(ShaderContext).GetProperties().Where(p => p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
 
         private static ShaderType GetShaderType(PropertyInfo p)
@@ -192,15 +192,15 @@ namespace Migoto.Log.Parser
                         Assets.Add(hash.Value, asset);
                     }
                     asset.DriverCalls.Add(driverCall);
-                    assetProp.SetValue(driverCall, asset);
+                    driverCall.Set(assetProp, asset);
                 }
             }
             if (shaderType.HasValue && shaderContextProps.TryGetValue(driverCallType, out var property))
-                property.SetValue(drawCallShaders[shaderType.Value].GetValue(drawCall), driverCall);
+                drawCall.Call(shader, shaderType.Value).Set(property, driverCall);
             else if (drawCallProps.TryGetValue(driverCallType, out property))
-                property.SetValue(drawCall, driverCall);
+                drawCall.Set(property, driverCall);
             else if (drawCallProps.TryGetValue(typeof(List<>).MakeGenericType(driverCallType), out var listProperty))
-                listProperty.AddWithRefection(drawCall, driverCall);
+                drawCall.Add(listProperty, driverCall);
             else
                 throw new InvalidOperationException($"DrawCall missing property for {methodName}");
         }
@@ -259,15 +259,17 @@ namespace Migoto.Log.Parser
             }
 
             asset.Slots.Add(slot);
-            slotType.GetProperty(nameof(Resource.Asset)).SetValue(slot, asset);
+            slot.Set(slotType.GetProperty(nameof(Resource.Asset)), asset);
 
             if (useList)
             {
                 slot.SetFromString(nameof(Resource.Index), captures["index"].Value);
-                slots.AddWithRefection(driverCall, slot);
+                driverCall.Add(slots, slot);
             }
             else
-                slots.SetValue(driverCall, slot);
+            {
+                driverCall.Set(slots, slot);
+            }
         }
 
         private void ProcessSamplerSlot(GroupCollection captures)
@@ -276,8 +278,8 @@ namespace Migoto.Log.Parser
             var sampler = new Sampler();
 
             var handle = captures["handle"].Value;
-            sampler.SetFromString("Handle", handle);
-            samplerSlots.AddWithRefection(driverCall, sampler);
+            sampler.SetFromString(nameof(Sampler.Handle), handle);
+            driverCall.Add(samplerSlots, sampler);
         }
 
         private void RecordUnhandled(string methodName)

@@ -2,6 +2,6 @@
 {
     public enum ShaderType
     {
-        Vertex, Hull, Domain, Pixel, Compute, Geometry
+        Vertex, Hull, Domain, Geometry, Pixel, Compute
     }
 }
