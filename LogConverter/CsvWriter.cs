@@ -66,8 +66,8 @@ namespace Migoto.Log.Converter
             var output = new StreamWriter(fileName);
 
             var buffers = new HashColumnSet[] {
-                new HashColumnSet("ib", dc => dc.SetIndexBuffer.Where(ib => ib.Buffer != null), frames),
                 new HashColumnSet("vb", dc => dc.SetVertexBuffers.SelectMany(vb => vb.VertexBuffers), frames),
+                new HashColumnSet("ib", dc => dc.SetIndexBuffer.Where(ib => ib.Buffer != null), frames),
             };
 
             HashColumnSet[] ShaderColumns(ShaderType shaderType)
@@ -90,7 +90,7 @@ namespace Migoto.Log.Converter
 
             var hashes = new[] { buffers, shaders, outputs }.SelectMany(c => c).ToList();
 
-            output.WriteLine($"Frame,Draw,{hashes.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
+            output.WriteLine($"Frame,Draw,Topology,Vertices,Indices,{hashes.SelectMany(c => c.Slots()).ToCSV()},Pre,Post");
 
             var logicSplit = new Regex(@"(?<! )(?=post)");
 
@@ -98,7 +98,14 @@ namespace Migoto.Log.Converter
             {
                 frame.DrawCalls.ForEach(drawCall =>
                 {
-                    output.WriteLine($"{frame.Index},{drawCall.Index},{hashes.SelectMany(c => c.GetHashes(drawCall)).ToCSV()},\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
+                    var iaIndices = "";
+                    if (drawCall.Draw != null)
+                        iaIndices = $"{drawCall.Draw.StartVertexLocation}-{drawCall.Draw.VertexCount},?,";
+                    else if (drawCall.DrawIndexed != null)
+                        iaIndices = $"{drawCall.DrawIndexed.BaseVertexLocation}-?,{drawCall.DrawIndexed.StartIndexLocation}-{drawCall.DrawIndexed.IndexCount}";
+                    output.Write($"{frame.Index},{drawCall.Index},{drawCall.PrimitiveTopology?.Topology},{iaIndices},");
+                    output.Write(hashes.SelectMany(c => c.GetHashes(drawCall)).ToCSV());
+                    output.WriteLine($",\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
                 });
             });
             output.Close();
