@@ -4,7 +4,9 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public class SetConstantBuffers : Base
+    using IMergableSlots = IMergableSlots<SetConstantBuffers, Resource>;
+
+    public class SetConstantBuffers : Base, IMergableSlots
     {
         public SetConstantBuffers(uint order, DrawCall owner) : base(order, owner)
         {
@@ -17,5 +19,12 @@ namespace Migoto.Log.Parser.DriverCall
         public ulong ppConstantBuffers { get; set; }
 
         public List<Resource> ConstantBuffers { get; set; } = new List<Resource>(14);
+
+        List<Resource> IMergableSlots.Slots => ConstantBuffers;
+        uint IMergableSlots.NumSlots { get => NumBuffers; set => NumBuffers = value; }
+        ulong IMergableSlots.Pointer => ppConstantBuffers;
+        List<ulong> IMergableSlots.PointersMerged { get; set; }
+
+        public void Merge(SetConstantBuffers value) => ((IMergableSlots)this).DoMerge(value);
     }
 }

@@ -61,13 +61,20 @@ namespace Migoto.Log.Parser
         {
             // analysis_options
             stream.ReadLine();
-            var line = 1;
+            var line = 2;
 
             while (!stream.EndOfStream)
             {
                 try
                 {
-                    ParseLine(stream.ReadLine());
+                    try
+                    {
+                        ParseLine(stream.ReadLine());
+                    }
+                    catch (TargetInvocationException tie)
+                    {
+                        throw tie.InnerException;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -170,6 +177,8 @@ namespace Migoto.Log.Parser
             }
             ShaderTypes.TryGetValue(methodName[0], out ShaderType? shaderType);
             driverCall = driverCallType.Construct<DriverCall.Base>(driverCallNo, drawCall);
+            driverCallNo++;
+
             var argsMatches = methodArgPattern.Match(captures["args"].Value);
             while (argsMatches.Success)
             {
@@ -221,8 +230,6 @@ namespace Migoto.Log.Parser
                 drawCall.Add(listProperty, driverCall);
             else
                 throw new InvalidOperationException($"DrawCall missing property for {methodName}");
-
-            driverCallNo++;
         }
 
         private void ProcessResourceSlot(GroupCollection captures)
@@ -302,7 +309,7 @@ namespace Migoto.Log.Parser
         private void ProcessSamplerSlot(GroupCollection captures)
         {
             var samplerSlots = driverCall.SlotsProperty;
-            var sampler = new Sampler();
+            var sampler = new Sampler(driverCall);
 
             var handle = captures["handle"].Value;
             sampler.SetFromString(nameof(Sampler.Handle), handle);

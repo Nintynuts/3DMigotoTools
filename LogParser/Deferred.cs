@@ -29,22 +29,34 @@ namespace Migoto.Log.Parser
             {
                 // This way avoids stack overflow
                 var fallback = Fallback;
-                while (!Fallback.Deferred.Overrides.ContainsKey(name) && fallback.Deferred.Fallback != null)
+                object result;
+                while (!fallback.Deferred.Overrides.TryGetValue(name, out result) && fallback.Deferred.Fallback != null)
                     fallback = fallback.Deferred.Fallback;
 
-                return fallback.Deferred.Get<TProperty>(false, name);
+                return (TProperty)result;
             }
             else
                 return null;
         }
 
-        public void Set<TProperty>(TProperty value, bool warnIfNotNull = true, [CallerMemberName] string name = null)
+        public void Set<TProperty>(TProperty value, bool warnIfExists = true, [CallerMemberName] string name = null)
             where TProperty : class
         {
-            if (warnIfNotNull && Overrides.ContainsKey(name))
-                Console.WriteLine($"{value.GetType().Name} already registered");
-
-            Overrides[name] = value;
+            if (Overrides.ContainsKey(name))
+            {
+                if (Overrides[name] is IMergable<TProperty> mergable)
+                {
+                    mergable.Merge(value);
+                    return;
+                }
+                Overrides[name] = value;
+                if (warnIfExists)
+                    throw new ArgumentException($"{value.GetType().Name} already registered");
+            }
+            else
+            {
+                Overrides[name] = value;
+            }
         }
     }
 }

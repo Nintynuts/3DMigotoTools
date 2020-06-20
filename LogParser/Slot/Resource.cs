@@ -1,8 +1,6 @@
-﻿using Migoto.Log.Parser.DriverCall;
-
-namespace Migoto.Log.Parser.Slot
+﻿namespace Migoto.Log.Parser.Slot
 {
-    public class Resource : IResource
+    public class Resource : IResource, IOwned<DriverCall.Base>
     {
         public ulong Pointer { get; set; }
 
@@ -10,9 +8,18 @@ namespace Migoto.Log.Parser.Slot
 
         public Asset.Base Asset { get; set; }
 
-        public Base Owner { get; }
+        public DriverCall.Base Owner { get; private set; }
 
-        public Resource(Base owner)
+        public void SetOwner(DriverCall.Base newOwner)
+        {
+            if (Owner != null)
+                Asset.Uses.Remove(this);
+            Owner = newOwner;
+            if (Owner != null)
+                Asset.Uses.Add(this);
+        }
+
+        public Resource(DriverCall.Base owner)
         {
             Owner = owner;
         }
