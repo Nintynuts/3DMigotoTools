@@ -33,14 +33,17 @@ namespace Migoto.Log.Parser
         public List<CopySubresourceRegion> SubresourceRegionCopied { get; } = new List<CopySubresourceRegion>();
         public List<ClearDepthStencilView> DepthStencilCleared { get; } = new List<ClearDepthStencilView>();
         public List<ClearRenderTargetView> RenderTargetCleared { get; } = new List<ClearRenderTargetView>();
+        public List<ClearUnorderedAccessViewUint> UnorderedAccessViewCleared { get; } = new List<ClearUnorderedAccessViewUint>();
 
         public RSSetState RasterizerState { get => Deferred.Get<RSSetState>(); set => Deferred.Set(value); }
+        public RSSetScissorRects RasterizerScissorRects { get => Deferred.Get<RSSetScissorRects>(); set => Deferred.Set(value); }
         public List<RSSetViewports> Viewports { get; } = new List<RSSetViewports>();
 
         public OMSetRenderTargets SetRenderTargets { get => Deferred.Get<OMSetRenderTargets>(); set => Deferred.Set(value); }
         public OMSetBlendState BlendState { get => Deferred.Get<OMSetBlendState>(); set => Deferred.Set(value); }
         public OMSetDepthStencilState DepthStencilState { get => Deferred.Get<OMSetDepthStencilState>(); set => Deferred.Set(value); }
         public OMGetRenderTargetsAndUnorderedAccessViews GetRTsAndUAVs { get => Deferred.Get<OMGetRenderTargetsAndUnorderedAccessViews>(false); set => Deferred.Set(value); }
+        public OMSetRenderTargetsAndUnorderedAccessViews SetRTsAndUAVs { get => Deferred.Get<OMSetRenderTargetsAndUnorderedAccessViews>(false); set => Deferred.Set(value); }
 
         public IASetPrimitiveTopology PrimitiveTopology { get => Deferred.Get<IASetPrimitiveTopology>(); set => Deferred.Set(value); }
 

@@ -61,39 +61,19 @@ namespace Migoto.Log.Parser
         {
             // analysis_options
             stream.ReadLine();
+            var line = 1;
 
             while (!stream.EndOfStream)
             {
-                var line = stream.ReadLine();
-
-                var driverCallMatch = methodPattern.Match(line);
-                if (driverCallMatch.Success)
+                try
                 {
-                    var indexMatch = indexPattern.Match(line);
-                    if (indexMatch.Success)
-                        ProcessFrameAndDrawCall(indexMatch.Groups);
-
-                    ProcessDriverCall(driverCallMatch.Groups);
-                    continue;
+                    ParseLine(stream.ReadLine());
                 }
-                var slotMatch = resourcePattern.Match(line);
-                if (slotMatch.Success)
+                catch (Exception e)
                 {
-                    ProcessResourceSlot(slotMatch.Groups);
-                    continue;
+                    Console.WriteLine($"Exception parsing line {line}: {e.Message}");
                 }
-                var samplerMatch = samplerPattern.Match(line);
-                if (samplerMatch.Success)
-                {
-                    ProcessSamplerSlot(samplerMatch.Groups);
-                    continue;
-                }
-                var logicMatch = logicPattern.Match(line);
-                if (logicMatch.Success)
-                {
-                    drawCall.Logic += logicMatch.Groups["logic"].Value + "\n";
-                    continue;
-                }
+                line++;
             }
             LogUnhandledForDrawCall();
             LogUnhandledForFrame();
@@ -101,6 +81,38 @@ namespace Migoto.Log.Parser
             SimplifyLogic();
 
             return Frames;
+        }
+
+        private void ParseLine(string line)
+        {
+            var driverCallMatch = methodPattern.Match(line);
+            if (driverCallMatch.Success)
+            {
+                var indexMatch = indexPattern.Match(line);
+                if (indexMatch.Success)
+                    ProcessFrameAndDrawCall(indexMatch.Groups);
+
+                ProcessDriverCall(driverCallMatch.Groups);
+                return;
+            }
+            var slotMatch = resourcePattern.Match(line);
+            if (slotMatch.Success)
+            {
+                ProcessResourceSlot(slotMatch.Groups);
+                return;
+            }
+            var samplerMatch = samplerPattern.Match(line);
+            if (samplerMatch.Success)
+            {
+                ProcessSamplerSlot(samplerMatch.Groups);
+                return;
+            }
+            var logicMatch = logicPattern.Match(line);
+            if (logicMatch.Success)
+            {
+                drawCall.Logic += logicMatch.Groups["logic"].Value + "\n";
+                return;
+            }
         }
 
         private void SimplifyLogic()
@@ -224,11 +236,15 @@ namespace Migoto.Log.Parser
             if (useList)
             {
                 slots = driverCall.SlotsProperty;
+                if (slots == null)
+                    throw new InvalidOperationException($"{driverCall.GetType().Name} doesn't have a slots property.");
                 slotType = slots.PropertyType.GetGenericArguments()[0];
             }
             else
             {
                 slots = driverCall.GetType().GetProperty(index);
+                if (slots == null)
+                    throw new InvalidOperationException($"{driverCall.GetType().Name} doesn't have a slot property called {index}.");
                 slotType = slots.PropertyType;
             }
             var slot = slotType.Construct<Resource>(driverCall);
