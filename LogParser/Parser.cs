@@ -160,7 +160,8 @@ namespace Migoto.Log.Parser
             }
             if (uint.TryParse(captures["drawcall"].Value, out var thisDrawCallNo) && thisDrawCallNo != drawCallNo)
             {
-                LogUnhandledForDrawCall();
+                if (drawCall != null)
+                    LogUnhandledForDrawCall();
                 drawCallNo = thisDrawCallNo;
                 driverCallNo = 0;
                 drawCall = new DrawCall(thisDrawCallNo, drawCall);

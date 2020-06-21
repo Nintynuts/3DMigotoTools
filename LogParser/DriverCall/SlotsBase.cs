@@ -38,7 +38,7 @@ namespace Migoto.Log.Parser.DriverCall
         protected List<TSlotType> AllSlots => allSlots ??= SlotsUsed.OrderBy(i => i).Select(GetSlot).ToList();
 
         private TSlotType GetSlot(int index)
-            => SlotsMask.Contains(index) ? Slots.FirstOrDefault(s => s.Index == index) : Deferred.Get<This>()?.GetSlot(index);
+            => SlotsMask.Contains(index) ? Slots.FirstOrDefault(s => s.Index == index) : Deferred?.Get<This>()?.GetSlot(index);
 
         private List<int> SlotsMask
             => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).Select(i => i).ToList();

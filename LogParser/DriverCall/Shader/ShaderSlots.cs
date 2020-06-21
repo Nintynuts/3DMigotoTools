@@ -12,7 +12,7 @@ namespace Migoto.Log.Parser.DriverCall
 
         public override List<int> SlotsUsed => UsedSlots.GetOrAdd(ShaderType);
 
-        protected override Deferred<ShaderContext, DrawCall> Deferred => Previous.Deferred;
+        protected override Deferred<ShaderContext, DrawCall> Deferred => Previous?.Deferred;
 
         protected override string Name => $"{ShaderType.ToString()[0]}S{base.Name}";
 
