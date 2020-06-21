@@ -1,14 +1,14 @@
 ﻿namespace Migoto.Log.Parser.DriverCall
 {
-    public class ShaderContext : IDeferred<ShaderContext>
+    public class ShaderContext : IDeferred<ShaderContext, DrawCall>
     {
-        public Deferred<ShaderContext> Deferred { get; }
+        public Deferred<ShaderContext, DrawCall> Deferred { get; }
 
         public ShaderContext(ShaderType shaderType, DrawCall owner, DrawCall previous)
         {
             ShaderType = shaderType;
             Owner = owner;
-            Deferred = new Deferred<ShaderContext>(previous?.Shader(shaderType));
+            Deferred = new Deferred<ShaderContext, DrawCall>(owner, previous?.Shader(shaderType));
         }
 
         public ShaderType ShaderType { get; }

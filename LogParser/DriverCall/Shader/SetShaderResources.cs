@@ -1,30 +1,20 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    using IMergableSlots = IMergableSlots<SetShaderResources, ResourceView>;
-
-    public class SetShaderResources : Base, IMergableSlots
+    public class SetShaderResources : ShaderSlots<SetShaderResources, ResourceView>, IResourceSlots
     {
-        public SetShaderResources(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public SetShaderResources(uint order, DrawCall owner) : base(order, owner) { }
 
-        public uint StartSlot { get; set; }
+        public uint NumViews { get => NumSlots; set => NumSlots = value; }
 
-        public uint NumViews { get; set; }
+        public ulong ppShaderResourceViews { get => Pointer; set => Pointer = value; }
 
-        public ulong ppShaderResourceViews { get; set; }
+        public ICollection<ResourceView> ResourceViews => Slots;
 
-        public List<ResourceView> ResourceViews { get; set; } = new List<ResourceView>(16);
-
-        List<ResourceView> IMergableSlots.Slots => ResourceViews;
-        uint IMergableSlots.NumSlots { get => NumViews; set => NumViews = value; }
-        ulong IMergableSlots.Pointer => ppShaderResourceViews;
-        List<ulong> IMergableSlots.PointersMerged { get; set; }
-
-        public void Merge(SetShaderResources value) => ((IMergableSlots)this).DoMerge(value);
+        IEnumerable<IResource> IResourceSlots.AllSlots => AllSlots.Cast<IResource>();
     }
 }

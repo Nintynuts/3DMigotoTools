@@ -12,21 +12,20 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser
 {
-    using Buffer = Asset.Buffer;
-
     public class Parser
     {
         private readonly StreamReader stream;
+        private readonly Action<string> logger;
 
         private readonly Regex indexPattern = new Regex(@"^(?:(?'frame'\d)+\.)?(?'drawcall'\d{6})");
         private readonly Regex methodPattern = new Regex(@"(?'method'\w+)\((?'args'.*?)\)(?: hash=(?'hash'\w+))?");
         private readonly Regex methodArgPattern = new Regex(@"(?'name'\w+):(?'value'\w+)");
-        private readonly Regex resourcePattern = new Regex(@"\s+(?'index'\w+): (?:view=(?'view'\w+) )?resource=(?'resource'\w+) hash=(?'hash'\w+)");
+        private readonly Regex resourcePattern = new Regex(@"\s+(?'index'\w+)?: (?:view=(?'view'\w+) )?resource=(?'resource'\w+)(?: hash=(?'hash'\w+))?");
         private readonly Regex samplerPattern = new Regex(@"\s+(?'index'\w+): handle=(?'handle'\w+)");
         private readonly Regex logicPattern = new Regex(@"3DMigoto (?'logic'.*)");
 
         private readonly Dictionary<string, Type> driverCallTypes = typeof(DriverCall.Base).Assembly.GetTypes().Where(t => typeof(DriverCall.Base).IsAssignableFrom(t) && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
-        private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.PropertyType != typeof(ShaderContext)).ToDictionary(p => p.PropertyType, p => p);
+        private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.IsGeneric(typeof(ICollection<>)) || p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
         private readonly MethodInfo shader = typeof(DrawCall).GetMethod(nameof(DrawCall.Shader));
         private readonly Dictionary<Type, PropertyInfo> shaderContextProps = typeof(ShaderContext).GetProperties().Where(p => p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
 
@@ -36,10 +35,10 @@ namespace Migoto.Log.Parser
         private readonly Dictionary<char, ShaderType> ShaderTypes
             = Enums.Values<ShaderType>().ToDictionary(s => s.ToString()[0], s => s);
 
-        public List<Frame> Frames { get; } = new List<Frame>();
+        public readonly Dictionary<string, int> driverCallSkipped = new Dictionary<string, int>();
+        public readonly Dictionary<string, int> frameSkipped = new Dictionary<string, int>();
 
-        public Dictionary<string, int> DrawCallSkipped { get; } = new Dictionary<string, int>();
-        public Dictionary<string, int> FrameSkipped { get; } = new Dictionary<string, int>();
+        public List<Frame> Frames { get; } = new List<Frame>();
         public Dictionary<string, Asset.Base> Assets { get; } = new Dictionary<string, Asset.Base>();
         public Dictionary<string, Shader> Shaders { get; } = new Dictionary<string, Shader>();
 
@@ -50,9 +49,10 @@ namespace Migoto.Log.Parser
         private DrawCall drawCall = new DrawCall(0, null);
         private DriverCall.Base driverCall = null;
 
-        public Parser(StreamReader stream)
+        public Parser(StreamReader stream, Action<string> logger)
         {
             this.stream = stream;
+            this.logger = logger;
             Frames.Add(frame);
             frame.DrawCalls.Add(drawCall);
         }
@@ -78,7 +78,7 @@ namespace Migoto.Log.Parser
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Exception parsing line {line}: {e.Message}");
+                    logger($"Exception parsing line {line}: {e.Message}");
                 }
                 line++;
             }
@@ -117,9 +117,11 @@ namespace Migoto.Log.Parser
             var logicMatch = logicPattern.Match(line);
             if (logicMatch.Success)
             {
-                drawCall.Logic += logicMatch.Groups["logic"].Value + "\n";
+                if (!logicMatch.Groups["logic"].Value.StartsWith("Dumping"))
+                    drawCall.Logic += logicMatch.Groups["logic"].Value + "\n";
                 return;
             }
+            throw new ArgumentException($"Unrecognised line: {line}");
         }
 
         private void SimplifyLogic()
@@ -196,7 +198,7 @@ namespace Migoto.Log.Parser
                     if (!Shaders.TryGetValue(hash.Value, out var shader))
                     {
                         shader = new Shader(shaderType.Value);
-                        shader.SetFromString("Hash", hash.Value);
+                        shader.SetFromString(nameof(Shader.Hash), hash.Value);
                         Shaders.Add(hash.Value, shader);
                     }
                     shader.References.Add(drawCall);
@@ -223,13 +225,25 @@ namespace Migoto.Log.Parser
             if (typeof(IDraw).IsAssignableFrom(driverCallType))
                 driverCallType = typeof(IDraw);
             if (shaderType.HasValue && shaderContextProps.TryGetValue(driverCallType, out var property))
-                drawCall.Call(shader, shaderType.Value).Set(property, driverCall);
+            {
+                var shaderCtx = drawCall.Shader(shaderType.Value);
+                driverCall.GetType().GetProperty(nameof(ShaderType))?.SetValue(driverCall, shaderType.Value);
+                shaderCtx.Set(property, driverCall);
+                driverCall = shaderCtx.Get<DriverCall.Base>(property);
+            }
             else if (drawCallProps.TryGetValue(driverCallType, out property))
+            {
                 drawCall.Set(property, driverCall);
-            else if (drawCallProps.TryGetValue(typeof(List<>).MakeGenericType(driverCallType), out var listProperty))
+                driverCall = drawCall.Get<DriverCall.Base>(property);
+            }
+            else if (drawCallProps.TryGetValue(typeof(ICollection<>).MakeGenericType(driverCallType), out var listProperty))
+            {
                 drawCall.Add(listProperty, driverCall);
+            }
             else
+            {
                 throw new InvalidOperationException($"DrawCall missing property for {methodName}");
+            }
         }
 
         private void ProcessResourceSlot(GroupCollection captures)
@@ -250,6 +264,7 @@ namespace Migoto.Log.Parser
             else
             {
                 slots = driverCall.GetType().GetProperty(index);
+                slots ??= driverCall.GetType().GetProperties().SingleOrDefault(p => typeof(Slot.Base).IsAssignableFrom(p.PropertyType));
                 if (slots == null)
                     throw new InvalidOperationException($"{driverCall.GetType().Name} doesn't have a slot property called {index}.");
                 slotType = slots.PropertyType;
@@ -263,21 +278,24 @@ namespace Migoto.Log.Parser
             var resourcePtr = captures["resource"].Value;
             slot.SetFromString(nameof(Resource.Pointer), resourcePtr);
 
-            var hash = captures["hash"].Value;
-            if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
+            if (captures["hash"].Success)
             {
-                var unknown = asset as Unknown;
+                var hash = captures["hash"].Value;
+                if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
+                {
+                    var unknown = asset as Unknown;
 
-                if (slotType == typeof(ResourceView))
-                    asset = new Texture();
-                else
-                    asset = new Buffer();
+                    if (slotType == typeof(ResourceView))
+                        asset = new Texture();
+                    else
+                        asset = new ConstantBuffer();
 
-                RegisterAsset(hash, asset, unknown);
+                    RegisterAsset(hash, asset, unknown);
+                }
+
+                slot.Set(slotType.GetProperty(nameof(Resource.Asset)), asset);
+                asset.Uses.Add(slot);
             }
-
-            slot.Set(slotType.GetProperty(nameof(Resource.Asset)), asset);
-            asset.Uses.Add(slot);
 
             if (useList)
             {
@@ -318,35 +336,40 @@ namespace Migoto.Log.Parser
 
         private void RecordUnhandled(string methodName)
         {
-            if (!DrawCallSkipped.ContainsKey(methodName))
-                DrawCallSkipped[methodName] = 0;
-            DrawCallSkipped[methodName]++;
+            if (!driverCallSkipped.ContainsKey(methodName))
+                driverCallSkipped[methodName] = 0;
+            driverCallSkipped[methodName]++;
 
-            if (!FrameSkipped.ContainsKey(methodName))
-                FrameSkipped[methodName] = 0;
-            FrameSkipped[methodName]++;
+            if (!frameSkipped.ContainsKey(methodName))
+                frameSkipped[methodName] = 0;
+            frameSkipped[methodName]++;
         }
 
         private void LogUnhandledForDrawCall()
         {
-            if (DrawCallSkipped.Any())
-                Console.WriteLine($"Frame: {frameNo} Call: {drawCallNo} Summary");
+            var messages = driverCallSkipped.Select(call => $"{call.Value}x {call.Key} not supported")
+                .Concat(drawCall.MergeWarnings)
+                .Concat(drawCall.Collisions);
 
-            foreach (var method in DrawCallSkipped)
-                Console.WriteLine($"{method.Value}x {method.Key} not supported");
+            if (!messages.Any())
+                return;
 
-            DrawCallSkipped.Clear();
+            logger($"Frame: {frameNo} Call: {drawCallNo} Summary");
+
+            messages.ForEach(msg => logger("  " + msg));
+
+            driverCallSkipped.Clear();
         }
 
         private void LogUnhandledForFrame()
         {
-            if (FrameSkipped.Any())
-                Console.WriteLine($"Frame: {frameNo} Summary");
+            if (frameSkipped.Any())
+                logger($"Frame: {frameNo} Summary");
 
-            foreach (var method in FrameSkipped)
-                Console.WriteLine($"{method.Value}x {method.Key} not supported");
+            foreach (var method in frameSkipped)
+                logger($"{method.Value}x {method.Key} not supported");
 
-            FrameSkipped.Clear();
+            frameSkipped.Clear();
         }
     }
 }

@@ -1,22 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Migoto.Log.Parser
 {
-    public interface IDeferred<T> where T : IDeferred<T>
+    public interface IDeferred<TDeferred, TOwner>
+        where TDeferred : class, IDeferred<TDeferred, TOwner>
+        where TOwner : class
     {
-        Deferred<T> Deferred { get; }
+        Deferred<TDeferred, TOwner> Deferred { get; }
     }
 
-    public class Deferred<T> where T : IDeferred<T>
+    public class Deferred<TDeferred, TOwner>
+        where TDeferred : class, IDeferred<TDeferred, TOwner>
+        where TOwner : class
     {
-        protected Dictionary<string, object> Overrides { get; } = new Dictionary<string, object>();
+        private readonly TOwner owner;
+        private readonly List<string> collisions = new List<string>();
 
-        private T Fallback { get; }
+        protected Dictionary<string, IOwned<TOwner>> Overrides { get; } = new Dictionary<string, IOwned<TOwner>>();
 
-        public Deferred(T fallback)
+        public IEnumerable<T> Values<T>() => Overrides.Values.OfType<T>();
+
+        public IEnumerable<string> Collisions => collisions;
+
+        private TDeferred Fallback { get; }
+
+        public Deferred(TOwner owner, TDeferred fallback)
         {
+            this.owner = owner;
             Fallback = fallback;
         }
 
@@ -29,7 +41,7 @@ namespace Migoto.Log.Parser
             {
                 // This way avoids stack overflow
                 var fallback = Fallback;
-                object result;
+                IOwned<TOwner> result;
                 while (!fallback.Deferred.Overrides.TryGetValue(name, out result) && fallback.Deferred.Fallback != null)
                     fallback = fallback.Deferred.Fallback;
 
@@ -40,22 +52,25 @@ namespace Migoto.Log.Parser
         }
 
         public void Set<TProperty>(TProperty value, bool warnIfExists = true, [CallerMemberName] string name = null)
-            where TProperty : class
+            where TProperty : IOwned<TOwner>
         {
-            if (Overrides.ContainsKey(name))
+            if (Overrides.TryGetValue(name, out var existing))
             {
-                if (Overrides[name] is IMergable<TProperty> mergable)
+                if (existing is IMergable<TProperty> mergable)
                 {
                     mergable.Merge(value);
                     return;
                 }
+                existing.SetOwner(null);
                 Overrides[name] = value;
+                value.SetOwner(owner);
                 if (warnIfExists)
-                    throw new ArgumentException($"{value.GetType().Name} already registered");
+                    collisions.Add($"{value.GetType().Name}: Already registered");
             }
             else
             {
                 Overrides[name] = value;
+                value.SetOwner(owner);
             }
         }
     }

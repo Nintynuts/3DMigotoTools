@@ -18,7 +18,7 @@ namespace Migoto.Log.Parser.DriverCall
         }
 
         public PropertyInfo SlotsProperty
-            => GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(List<>));
+            => GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>));
 
         public PropertyInfo AssetProperty
             => GetType().GetProperties().FirstOrDefault(p => p.CanWrite && typeof(Asset.Base).IsAssignableFrom(p.PropertyType));

@@ -7,10 +7,21 @@ namespace Migoto.Log.Parser
 {
     public static class ReflectionExtensions
     {
+        public static object Construct(this Type type, params object[] args)
+        {
+            return Activator.CreateInstance(type, args);
+        }
+
         public static T Construct<T>(this Type type, params object[] args)
         {
             return (T)Activator.CreateInstance(type, args);
         }
+
+        public static void Set(this PropertyInfo prop, object value) => prop.SetValue(null, value);
+
+        public static object Get(this PropertyInfo prop) => prop.GetValue(null);
+
+        public static T Get<T>(this PropertyInfo prop) => (T)prop.GetValue(null);
 
         public static void Set(this object target, PropertyInfo prop, object value) => prop.SetValue(target, value);
 
@@ -38,5 +49,8 @@ namespace Migoto.Log.Parser
             var add = list.PropertyType.GetMethod(nameof(List<object>.Add));
             target.Get(list).Call(add, value);
         }
+
+        public static bool IsGeneric(this PropertyInfo prop, Type genericType)
+            => prop.PropertyType.IsGenericType && genericType == prop.PropertyType.GetGenericTypeDefinition();
     }
 }

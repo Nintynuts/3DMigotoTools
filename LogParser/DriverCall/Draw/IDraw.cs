@@ -3,10 +3,10 @@
     public interface IDraw
     {
         uint? StartVertex { get; }
-        uint? EndVertex { get; }
+        uint? VertexCount { get; }
         uint? StartIndex { get; }
-        uint? EndIndex { get; }
+        uint? IndexCount { get; }
         uint? StartInstance { get; }
-        uint? EndInstance { get; }
+        uint? InstanceCount { get; }
     }
 }

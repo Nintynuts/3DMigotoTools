@@ -1,6 +1,6 @@
 ﻿namespace Migoto.Log.Parser
 {
-    interface IOwned<T>
+    public interface IOwned<T>
     {
         T Owner { get; }
 

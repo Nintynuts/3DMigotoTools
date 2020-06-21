@@ -1,6 +1,13 @@
-﻿namespace Migoto.Log.Parser
+﻿using System.Collections.Generic;
+
+namespace Migoto.Log.Parser
 {
-    internal interface IMergable<T>
+    public interface IMergable
+    {
+        IEnumerable<string> MergeWarnings { get; }
+    }
+
+    public interface IMergable<T> : IMergable
     {
         void Merge(T value);
     }

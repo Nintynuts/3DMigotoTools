@@ -6,11 +6,18 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.Asset
 {
+    public interface IHash
+    {
+        string Hex { get; }
+    }
+
     [System.Diagnostics.DebuggerDisplay("{GetType().Name}: {Hash.ToString(\"X\")}")]
-    public abstract class Base
+    public abstract class Base : IHash
     {
         [TypeConverter(typeof(HashTypeConverter))]
         public uint Hash { get; set; }
+
+        public string Hex => $"{Hash:X8}";
 
         public List<IResource> Uses { get; } = new List<IResource>();
 

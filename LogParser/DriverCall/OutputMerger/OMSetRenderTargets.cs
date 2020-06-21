@@ -1,42 +1,23 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public class OMSetRenderTargets : Base, IMergable<OMSetRenderTargets>
+    public class OMSetRenderTargets : Slots<OMSetRenderTargets, ResourceView>, IResourceSlots
     {
-        public OMSetRenderTargets(uint order, DrawCall owner) : base(order, owner)
+        public OMSetRenderTargets(uint order, DrawCall owner) : base(order, owner) { }
+
+        public uint NumViews { get => NumSlots; set => NumSlots = value; }
+
+        public ulong ppRenderTargetViews { get => Pointer; set => Pointer = value; }
+
+        public ICollection<ResourceView> RenderTargets => Slots;
+
+        public override void Merge(OMSetRenderTargets value)
         {
-        }
-
-        public uint NumViews { get; set; }
-        public ulong ppRenderTargetViews { get; set; }
-        public ulong pDepthStencilView { get; set; }
-
-        public List<ResourceView> RenderTargets { get; private set; } = new List<ResourceView>();
-
-        public ResourceView D { get; set; }
-        public ResourceView DepthStencil => D;
-
-        public void Merge(OMSetRenderTargets value)
-        {
-            if (RenderTargets.Count < value.RenderTargets.Count)
-            {
-                RenderTargets.ForEach(rt => rt.SetOwner(null));
-                ppRenderTargetViews = value.ppRenderTargetViews;
-                RenderTargets = value.RenderTargets;
-            }
-            else
-            {
-                for (int i = 0; i < value.RenderTargets.Count; i++)
-                {
-                    RenderTargets[i].SetOwner(null);
-                    RenderTargets[i].Asset.Uses.Remove(RenderTargets[i]);
-                    RenderTargets[i] = value.RenderTargets[i];
-                }
-            }
-            value.RenderTargets.ForEach(rt => rt.SetOwner(this));
+            base.Merge(value);
 
             if (value.DepthStencil != null)
             {
@@ -46,5 +27,11 @@ namespace Migoto.Log.Parser.DriverCall
                 DepthStencil.SetOwner(this);
             }
         }
+
+        public ulong pDepthStencilView { get; set; }
+        public ResourceView D { get; set; }
+        public ResourceView DepthStencil => D;
+
+        IEnumerable<IResource> IResourceSlots.AllSlots => AllSlots.Cast<IResource>();
     }
 }

@@ -1,13 +1,12 @@
-﻿namespace Migoto.Log.Parser.Slot
+﻿
+using Migoto.Log.Parser.DriverCall;
+
+namespace Migoto.Log.Parser.Slot
 {
-    public class Sampler : IOwned<DriverCall.Base>
+    public class Sampler : Base, IOwned<DriverCall.Base>
     {
+        public Sampler(DriverCall.Base owner) : base(owner) { }
+
         public ulong Handle { get; set; }
-
-        public DriverCall.Base Owner { get; private set; }
-
-        public void SetOwner(DriverCall.Base newOwner) => Owner = newOwner;
-
-        public Sampler(DriverCall.Base owner) => Owner = owner;
     }
 }

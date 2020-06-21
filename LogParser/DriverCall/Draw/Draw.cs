@@ -6,15 +6,14 @@
         {
         }
 
-        public uint VertexCount { get; set; }
+        public uint? VertexCount { get; set; }
 
         public uint StartVertexLocation { get; set; }
 
         public uint? StartVertex => StartVertexLocation;
-        public uint? EndVertex => StartVertexLocation + VertexCount;
         public uint? StartIndex => null;
-        public uint? EndIndex => null;
+        public uint? IndexCount => null;
         public uint? StartInstance => null;
-        public uint? EndInstance => null;
+        public uint? InstanceCount => null;
     }
 }

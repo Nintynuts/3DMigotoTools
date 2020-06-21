@@ -22,5 +22,24 @@ namespace Migoto.Log.Parser
             value = success ? null : (TValue?)result;
             return success;
         }
+
+        public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TValue> makeNew)
+        {
+            if (!dict.ContainsKey(key))
+                dict.Add(key, makeNew());
+            return dict[key];
+        }
+
+        public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key)
+            where TValue : new()
+        {
+            return dict.GetOrAdd(key, () => new TValue());
+        }
+
+        public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue defaultValue = default)
+            where TValue : struct
+        {
+            return dict.GetOrAdd(key, () => defaultValue);
+        }
     }
 }
