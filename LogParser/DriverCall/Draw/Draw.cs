@@ -2,15 +2,12 @@
 {
     public class Draw : Base, IDraw
     {
-        public Draw(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
-
-        public uint? VertexCount { get; set; }
+        public Draw(uint order, DrawCall owner) : base(order, owner) { }
 
         public uint StartVertexLocation { get; set; }
 
         public uint? StartVertex => StartVertexLocation;
+        public uint? VertexCount { get; set; }
         public uint? StartIndex => null;
         public uint? IndexCount => null;
         public uint? StartInstance => null;

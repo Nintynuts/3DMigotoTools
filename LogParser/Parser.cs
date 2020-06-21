@@ -368,7 +368,7 @@ namespace Migoto.Log.Parser
                 logger($"Frame: {frameNo} Summary");
 
             foreach (var method in frameSkipped)
-                logger($"{method.Value}x {method.Key} not supported");
+                logger($"  {method.Value}x {method.Key} not supported");
 
             frameSkipped.Clear();
         }

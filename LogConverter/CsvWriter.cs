@@ -20,9 +20,9 @@ namespace Migoto.Log.Converter
                 new HashColumnSet("vb", dc => dc.SetVertexBuffers, IASetVertexBuffers.UsedSlots),
                 new Column("ib#", dc => dc.Draw?.StartIndex.AsString()),
                 new Column("ib*", dc => dc.Draw?.IndexCount.AsString()),
-                new Column("ib^#", dc => dc.Draw?.StartInstance.AsString()),
-                new Column("ib^*", dc => dc.Draw?.InstanceCount.AsString()),
                 new HashColumn("ib", dc => dc.SetIndexBuffer?.Buffer),
+                new Column("inst#", dc => dc.Draw?.StartInstance.AsString()),
+                new Column("inst*", dc => dc.Draw?.InstanceCount.AsString()),
             };
 
             IColumns[] ShaderColumns(ShaderType shaderType)

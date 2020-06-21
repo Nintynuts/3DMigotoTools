@@ -1,13 +1,17 @@
 ﻿namespace Migoto.Log.Parser.DriverCall.Draw
 {
-    public class DrawIndexed : DrawIndexedCommon, IDraw
+    public class DrawIndexed : Base, IDraw, IDrawIndexed
     {
-        public DrawIndexed(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public DrawIndexed(uint order, DrawCall owner) : base(order, owner) { }
 
-        public virtual uint? IndexCount { get; set; }
-        public virtual uint? StartInstance => null;
-        public virtual uint? InstanceCount => null;
+        public uint StartIndexLocation { get; set; }
+        public uint BaseVertexLocation { get; set; }
+
+        public uint? StartVertex => BaseVertexLocation;
+        public uint? VertexCount => null;
+        public uint? StartIndex => StartIndexLocation;
+        public uint? IndexCount { get; set; }
+        public uint? StartInstance => null;
+        public uint? InstanceCount => null;
     }
 }

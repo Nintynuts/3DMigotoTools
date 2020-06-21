@@ -46,7 +46,7 @@ namespace Migoto.Log.Parser
 
         public static void Add(this object target, PropertyInfo list, object value)
         {
-            var add = list.PropertyType.GetMethod(nameof(List<object>.Add));
+            var add = list.PropertyType.GetMethod(nameof(ICollection<object>.Add));
             target.Get(list).Call(add, value);
         }
 

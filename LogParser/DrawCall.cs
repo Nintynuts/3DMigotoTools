@@ -26,6 +26,7 @@ namespace Migoto.Log.Parser
             Unmappings = new OwnedCollection<DrawCall, Unmap>(this);
             ResourceCopied = new OwnedCollection<DrawCall, CopyResource>(this);
             SubresourceRegionCopied = new OwnedCollection<DrawCall, CopySubresourceRegion>(this);
+            SubresourceUpdated = new OwnedCollection<DrawCall, UpdateSubresource>(this);
             DepthStencilCleared = new OwnedCollection<DrawCall, ClearDepthStencilView>(this);
             RenderTargetCleared = new OwnedCollection<DrawCall, ClearRenderTargetView>(this);
             UnorderedAccessViewCleared = new OwnedCollection<DrawCall, ClearUnorderedAccessViewUint>(this);
@@ -41,6 +42,7 @@ namespace Migoto.Log.Parser
 
         public ICollection<CopyResource> ResourceCopied { get; }
         public ICollection<CopySubresourceRegion> SubresourceRegionCopied { get; }
+        public ICollection<UpdateSubresource> SubresourceUpdated { get; }
         public ICollection<ClearDepthStencilView> DepthStencilCleared { get; }
         public ICollection<ClearRenderTargetView> RenderTargetCleared { get; }
         public ICollection<ClearUnorderedAccessViewUint> UnorderedAccessViewCleared { get; }

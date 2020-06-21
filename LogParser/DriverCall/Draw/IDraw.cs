@@ -9,4 +9,15 @@
         uint? StartInstance { get; }
         uint? InstanceCount { get; }
     }
+
+    public interface IDrawInstanced
+    {
+        public uint StartInstanceLocation { get; set; }
+    }
+
+    public interface IDrawIndexed
+    {
+        public uint StartIndexLocation { get; set; }
+        public uint BaseVertexLocation { get; set; }
+    }
 }
