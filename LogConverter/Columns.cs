@@ -33,7 +33,7 @@ namespace Migoto.Log.Converter
         {
             var items = provider(ctx);
             if (items == null)
-                return Columns.Select(_ => string.Empty);
+                return columns.Select(_ => string.Empty);
 
             return items.AllSlots.Select(r => r == null ? string.Empty : r.Asset?.Hex ?? "No Hash");
         }
@@ -75,7 +75,9 @@ namespace Migoto.Log.Converter
 
     internal static class CsvExtensions
     {
-        public static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");
+        public static string Delimit(this IEnumerable<string> items, char delimiter)
+            => items.Any() ? items.Aggregate((a, b) => $"{a}{delimiter}{b}") : string.Empty;
+        public static string ToCSV(this IEnumerable<string> items) => items.Delimit(',');
         public static string Headers<T>(this IEnumerable<IColumns<T>> items) => items.SelectMany(i => i.Columns).ToCSV();
         public static string Values<T>(this IEnumerable<IColumns<T>> items, T ctx) => items.SelectMany(i => i.GetValues(ctx)).ToCSV();
     }

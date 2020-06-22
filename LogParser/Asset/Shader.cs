@@ -34,7 +34,7 @@ namespace Migoto.Log.Parser.Asset
 
         public ICollection<Texture> PartnerTextures => PartnerResource<Texture>(ctx => ctx.SetShaderResources?.ResourceViews);
         public ICollection<Texture> PartnerRTs => PartnerResource<Texture>(ctx => ctx.Owner.SetRenderTargets?.RenderTargets);
-        public ICollection<ConstantBuffer> PartnerBuffers => PartnerResource<ConstantBuffer>(ctx => ctx.SetConstantBuffers?.ConstantBuffers);
+        public ICollection<Buffer> PartnerBuffers => PartnerResource<Buffer>(ctx => ctx.SetConstantBuffers?.ConstantBuffers);
 
         private ICollection<T> PartnerResource<T>(System.Func<ShaderContext, IEnumerable<Resource>> selector)
             => References.SelectMany(r => selector(r.Shader(ShaderType))?.Select(rv => rv.Asset).OfType<T>() ?? Enumerable.Empty<T>()).Consolidate();

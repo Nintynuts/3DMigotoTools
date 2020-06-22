@@ -12,6 +12,8 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser
 {
+    using Buffer = Asset.Buffer;
+
     public class Parser
     {
         private readonly StreamReader stream;
@@ -289,7 +291,7 @@ namespace Migoto.Log.Parser
                     if (slotType == typeof(ResourceView))
                         asset = new Texture();
                     else
-                        asset = new ConstantBuffer();
+                        asset = new Buffer();
 
                     RegisterAsset(hash, asset, unknown);
                 }

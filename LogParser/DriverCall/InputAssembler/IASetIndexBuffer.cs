@@ -15,12 +15,12 @@ namespace Migoto.Log.Parser.DriverCall
         public uint Format { get; set; }
         public uint Offset { get; set; }
 
-        public ConstantBuffer Buffer { get; set; }
+        public Buffer Buffer { get; set; }
 
         Asset.Base IResource.Asset => Buffer;
         ulong IResource.Pointer => pIndexBuffer;
         Base IResource.Owner => this;
 
-        public void UpdateAsset(Asset.Base asset) => Buffer = asset as ConstantBuffer;
+        public void UpdateAsset(Asset.Base asset) => Buffer = asset as Buffer;
     }
 }
