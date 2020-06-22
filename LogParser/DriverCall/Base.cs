@@ -4,12 +4,17 @@ using System.Reflection;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public abstract class Base : IOwned<DrawCall>
+    public abstract class Base : IOwned<DrawCall>, IOverriden<DrawCall>
     {
         public uint Order { get; }
         public DrawCall Owner { get; private set; }
+        public DrawCall LastUser { get; private set; }
+
 
         public void SetOwner(DrawCall newOwner) => Owner = newOwner;
+        public void SetLastUser(DrawCall lastUser) => LastUser = lastUser;
+
+        public virtual string Name => GetType().Name;
 
         protected Base(uint order, DrawCall owner)
         {

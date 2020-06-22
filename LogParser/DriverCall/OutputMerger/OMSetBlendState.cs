@@ -1,6 +1,6 @@
 ﻿namespace Migoto.Log.Parser.DriverCall
 {
-    public class OMSetBlendState : Base
+    public class OMSetBlendState : Base, IOutputMerger
     {
         public OMSetBlendState(uint order, DrawCall owner) : base(order, owner)
         {

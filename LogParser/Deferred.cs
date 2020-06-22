@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -20,7 +21,11 @@ namespace Migoto.Log.Parser
 
         protected Dictionary<string, IOwned<TOwner>> Overrides { get; } = new Dictionary<string, IOwned<TOwner>>();
 
-        public IEnumerable<T> Values<T>() => Overrides.Values.OfType<T>();
+        protected Dictionary<string, IOwned<TOwner>> FallbackValues { get; } = new Dictionary<string, IOwned<TOwner>>();
+
+        public IEnumerable<T> OfType<T>() => Overrides.Values.OfType<T>();
+
+        public IEnumerable<object> OfType(Type type) => Overrides.Values.Where(v => v.GetType() == type);
 
         public IEnumerable<string> Collisions => collisions;
 
@@ -35,20 +40,37 @@ namespace Migoto.Log.Parser
         public TProperty Get<TProperty>(bool useFallback = true, [CallerMemberName] string name = null)
             where TProperty : class
         {
-            if (Overrides.ContainsKey(name))
-                return (TProperty)Overrides[name];
+            if (Overrides.TryGetValue(name, out var result))
+                return (TProperty)result;
+            else if (FallbackValues.TryGetValue(name, out result))
+            {
+                SetLastUser(result);
+                return (TProperty)result;
+            }
             else if (useFallback && Fallback != null)
             {
                 // This way avoids stack overflow
-                var fallback = Fallback;
-                IOwned<TOwner> result;
-                while (!fallback.Deferred.Overrides.TryGetValue(name, out result) && fallback.Deferred.Fallback != null)
-                    fallback = fallback.Deferred.Fallback;
+                var deferred = Fallback.Deferred;
+                while (!deferred.Overrides.TryGetValue(name, out result)
+                    && !deferred.FallbackValues.TryGetValue(name, out result)
+                    && deferred.Fallback != null)
+                {
+                    deferred = deferred.Fallback.Deferred;
+                }
+
+                SetLastUser(result);
+                FallbackValues[name] = result;
 
                 return (TProperty)result;
             }
             else
                 return null;
+        }
+
+        private void SetLastUser(IOwned<TOwner> result)
+        {
+            if (result is IOverriden<TOwner> previous)
+                previous.SetLastUser(owner);
         }
 
         public void Set<TProperty>(TProperty value, bool warnIfExists = true, [CallerMemberName] string name = null)

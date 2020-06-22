@@ -1,6 +1,6 @@
 ﻿namespace Migoto.Log.Parser.Slot
 {
-    public class Resource : Base, IResource
+    public class Resource : Base, ISlotResource
     {
         public Resource(DriverCall.Base owner) : base(owner) { }
 

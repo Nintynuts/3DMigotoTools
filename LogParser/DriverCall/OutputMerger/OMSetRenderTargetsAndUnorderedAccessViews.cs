@@ -1,6 +1,8 @@
 ﻿namespace Migoto.Log.Parser.DriverCall
 {
-    public class OMSetRenderTargetsAndUnorderedAccessViews : OMGetRenderTargetsAndUnorderedAccessViews
+    using OMGetRTsAndUAVs = OMGetRenderTargetsAndUnorderedAccessViews;
+
+    public class OMSetRenderTargetsAndUnorderedAccessViews : OMGetRTsAndUAVs, IOutputMerger
     {
         public OMSetRenderTargetsAndUnorderedAccessViews(uint order, DrawCall owner) : base(order, owner)
         {

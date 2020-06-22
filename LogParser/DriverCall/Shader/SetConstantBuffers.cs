@@ -15,6 +15,6 @@ namespace Migoto.Log.Parser.DriverCall
 
         public ICollection<Resource> ConstantBuffers => Slots;
 
-        IEnumerable<IResource> IResourceSlots.AllSlots => AllSlots.Cast<IResource>();
+        IEnumerable<ISlotResource> IResourceSlots.AllSlots => AllSlots.Cast<ISlotResource>();
     }
 }

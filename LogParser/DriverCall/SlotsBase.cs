@@ -27,8 +27,6 @@ namespace Migoto.Log.Parser.DriverCall
 
         protected abstract Deferred<TDeferred, DrawCall> Deferred { get; }
 
-        protected virtual string Name => GetType().Name;
-
         protected ICollection<TSlotType> Slots { get; }
         public uint StartSlot { get; set; }
         protected uint NumSlots { get; set; }
@@ -38,7 +36,14 @@ namespace Migoto.Log.Parser.DriverCall
         protected List<TSlotType> AllSlots => allSlots ??= SlotsUsed.OrderBy(i => i).Select(GetSlot).ToList();
 
         private TSlotType GetSlot(int index)
-            => SlotsMask.Contains(index) ? Slots.FirstOrDefault(s => s.Index == index) : Deferred?.Get<This>()?.GetSlot(index);
+            => SlotsMask.Contains(index) ? Slots.FirstOrDefault(s => s.Index == index) : GetPrevious(index);
+
+        private TSlotType GetPrevious(int index)
+        {
+            TSlotType slot = Deferred?.Get<This>()?.GetSlot(index);
+            slot?.SetLastUser(this);
+            return slot;
+        }
 
         private List<int> SlotsMask
             => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).Select(i => i).ToList();

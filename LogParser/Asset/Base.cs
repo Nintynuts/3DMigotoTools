@@ -21,7 +21,7 @@ namespace Migoto.Log.Parser.Asset
 
         public List<IResource> Uses { get; } = new List<IResource>();
 
-        public List<(int index, List<IResource> slots)> Slots => Uses.GroupBy(s => s.Index).Select(g => (index: g.Key, slots: g.ToList())).ToList();
+        public List<(int index, List<ISlotResource> slots)> Slots => Uses.OfType<ISlotResource>().GroupBy(s => s.Index).Select(g => (index: g.Key, slots: g.ToList())).ToList();
 
         public List<DriverCall.Base> LifeCycle => Uses.Select(s => s.Owner).OrderBy(dc => dc.Owner.Index).ThenBy(dc => dc.Order).ToList();
     }

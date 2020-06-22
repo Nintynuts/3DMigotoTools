@@ -69,7 +69,7 @@ namespace Migoto.Log.Parser
 
         public ShaderContext Shader(ShaderType type) => Shaders[type];
 
-        public IEnumerable<string> MergeWarnings => Deferred.Values<IMergable>().SelectMany(m => m.MergeWarnings);
+        public IEnumerable<string> MergeWarnings => Deferred.OfType<IMergable>().SelectMany(m => m.MergeWarnings);
 
         public IEnumerable<string> Collisions => Deferred.Collisions.Concat(Shaders.Values.Select(s => s.Deferred.Collisions).SelectMany(c => c));
     }

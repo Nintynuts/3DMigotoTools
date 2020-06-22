@@ -5,7 +5,7 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public class IASetVertexBuffers : Slots<IASetVertexBuffers, Resource>, IResourceSlots
+    public class IASetVertexBuffers : Slots<IASetVertexBuffers, Resource>, IResourceSlots, IInputAssembler
     {
         public IASetVertexBuffers(uint order, DrawCall owner) : base(order, owner) { }
 
@@ -19,6 +19,6 @@ namespace Migoto.Log.Parser.DriverCall
 
         public ICollection<Resource> VertexBuffers => Slots;
 
-        IEnumerable<IResource> IResourceSlots.AllSlots => AllSlots.Cast<IResource>();
+        IEnumerable<ISlotResource> IResourceSlots.AllSlots => AllSlots.Cast<ISlotResource>();
     }
 }

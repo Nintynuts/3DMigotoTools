@@ -2,26 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using Migoto.Log.Parser;
 using Migoto.Log.Parser.Asset;
 using Migoto.Log.Parser.DriverCall;
 
 namespace Migoto.Log.Converter
 {
-    internal interface IColumns
+    internal interface IColumns<T>
     {
         IEnumerable<string> Columns { get; }
-        IEnumerable<string> GetValues(DrawCall dc);
+        IEnumerable<string> GetValues(T dc);
     }
 
-    internal class HashColumnSet : IColumns
+    internal class HashColumnSet<T> : IColumns<T>
     {
         private readonly string name;
 
-        private readonly Func<DrawCall, IResourceSlots> provider;
+        private readonly Func<T, IResourceSlots> provider;
         private readonly IEnumerable<int> columns;
 
-        public HashColumnSet(string name, Func<DrawCall, IResourceSlots> provider, IEnumerable<int> columns)
+        public HashColumnSet(string name, Func<T, IResourceSlots> provider, IEnumerable<int> columns)
         {
             this.name = name;
             this.provider = provider;
@@ -30,9 +29,9 @@ namespace Migoto.Log.Converter
 
         public IEnumerable<string> Columns => columns.Select(i => $"{name}{i}");
 
-        public IEnumerable<string> GetValues(DrawCall dc)
+        public IEnumerable<string> GetValues(T ctx)
         {
-            var items = provider(dc);
+            var items = provider(ctx);
             if (items == null)
                 return Columns.Select(_ => string.Empty);
 
@@ -40,13 +39,13 @@ namespace Migoto.Log.Converter
         }
     }
 
-    internal class HashColumn : IColumns
+    internal class HashColumn<T> : IColumns<T>
     {
         private readonly string name;
 
-        private readonly Func<DrawCall, IHash> provider;
+        private readonly Func<T, IHash> provider;
 
-        public HashColumn(string name, Func<DrawCall, IHash> provider)
+        public HashColumn(string name, Func<T, IHash> provider)
         {
             this.name = name;
             this.provider = provider;
@@ -54,16 +53,16 @@ namespace Migoto.Log.Converter
 
         public IEnumerable<string> Columns => new[] { name };
 
-        public IEnumerable<string> GetValues(DrawCall dc) => new[] { provider(dc)?.Hex ?? string.Empty };
+        public IEnumerable<string> GetValues(T ctx) => new[] { provider(ctx)?.Hex ?? string.Empty };
     }
 
-    internal class Column : IColumns
+    internal class Column<T> : IColumns<T>
     {
         private readonly string name;
 
-        private readonly Func<DrawCall, object> provider;
+        private readonly Func<T, object> provider;
 
-        public Column(string name, Func<DrawCall, object> provider)
+        public Column(string name, Func<T, object> provider)
         {
             this.name = name;
             this.provider = provider;
@@ -71,6 +70,13 @@ namespace Migoto.Log.Converter
 
         public IEnumerable<string> Columns => new[] { name };
 
-        public IEnumerable<string> GetValues(DrawCall dc) => new[] { provider(dc)?.ToString() ?? string.Empty };
+        public IEnumerable<string> GetValues(T ctx) => new[] { provider(ctx)?.ToString() ?? string.Empty };
+    }
+
+    internal static class CsvExtensions
+    {
+        public static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");
+        public static string Headers<T>(this IEnumerable<IColumns<T>> items) => items.SelectMany(i => i.Columns).ToCSV();
+        public static string Values<T>(this IEnumerable<IColumns<T>> items, T ctx) => items.SelectMany(i => i.GetValues(ctx)).ToCSV();
     }
 }

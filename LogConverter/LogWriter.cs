@@ -8,10 +8,17 @@ using Migoto.Log.Parser.DriverCall;
 
 namespace Migoto.Log.Converter
 {
-    public static class CsvWriter
+    using Column = Column<DrawCall>;
+    using HashColumn = HashColumn<DrawCall>;
+    using HashColumnSet = HashColumnSet<DrawCall>;
+    using IColumns = IColumns<DrawCall>;
+
+    public static class LogWriter
     {
         public static void Write(List<Frame> frames, StreamWriter output)
         {
+            var logicSplit = new Regex(@"(?<! )(?=post)");
+
             var buffers = new IColumns[] {
                 new Column("Draw", dc => dc.Index),
                 new Column("Topology", dc => dc.PrimitiveTopology?.Topology),
@@ -41,27 +48,23 @@ namespace Migoto.Log.Converter
             var outputs = new IColumns[] {
                 new HashColumnSet("o", dc => dc.SetRenderTargets, OMSetRenderTargets.UsedSlots),
                 new HashColumn("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset ),
+                new Column("Pre,Post", dc => $"\"{logicSplit.Replace(dc.Logic ?? "", "\",\"")}\"" ),
             };
 
             var hashes = new[] { buffers, shaders, outputs }.SelectMany(c => c).ToList();
 
-            output.WriteLine($"Frame,{hashes.SelectMany(c => c.Columns).ToCSV()},Pre,Post");
-
-            var logicSplit = new Regex(@"(?<! )(?=post)");
+            output.WriteLine($"Frame,{hashes.Headers()}");
 
             frames.ForEach(frame =>
             {
                 frame.DrawCalls.ForEach(drawCall =>
                 {
-                    output.Write($"{frame.Index},{hashes.SelectMany(c => c.GetValues(drawCall)).ToCSV()}");
-                    output.WriteLine($",\"{logicSplit.Replace(drawCall.Logic ?? "", "\",\"")}\"");
+                    output.WriteLine($"{frame.Index},{hashes.Values(drawCall)}");
                 });
             });
             output.Close();
         }
 
         private static string AsString(this uint? number) => number?.ToString() ?? "?";
-
-        private static string ToCSV(this IEnumerable<string> items) => items.Aggregate((a, b) => $"{a},{b}");
     }
 }

@@ -98,11 +98,9 @@
         CONTROL_POINT_PATCHLIST_32_D3D11
     };
 
-    public class IASetPrimitiveTopology : Base
+    public class IASetPrimitiveTopology : Base, IInputAssembler
     {
-        public IASetPrimitiveTopology(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public IASetPrimitiveTopology(uint order, DrawCall owner) : base(order, owner) { }
 
         public D3D_PRIMITIVE_TOPOLOGY Topology { get; set; }
     }

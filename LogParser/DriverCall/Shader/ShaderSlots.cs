@@ -2,7 +2,12 @@
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public abstract class ShaderSlots<This, TSlotType> : SlotsBase<This, TSlotType, ShaderContext>
+    public interface IShaderCall
+    {
+        ShaderType ShaderType { get; }
+    }
+
+    public abstract class ShaderSlots<This, TSlotType> : SlotsBase<This, TSlotType, ShaderContext>, IShaderCall
         where This : SlotsBase<This, TSlotType, ShaderContext>
         where TSlotType : Slot.Base
     {
@@ -14,7 +19,7 @@ namespace Migoto.Log.Parser.DriverCall
 
         protected override Deferred<ShaderContext, DrawCall> Deferred => Previous?.Deferred;
 
-        protected override string Name => $"{ShaderType.ToString()[0]}S{base.Name}";
+        public override string Name => $"{ShaderType.ToString()[0]}S{base.Name}";
 
         public ShaderType ShaderType { get; set; }
 

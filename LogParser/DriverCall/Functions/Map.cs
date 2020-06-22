@@ -13,7 +13,6 @@ namespace Migoto.Log.Parser.DriverCall
         public ulong pMappedResource { get; set; }
 
         public Asset.Base Asset { get; private set; }
-        int IResource.Index => -1;
         ulong IResource.Pointer => pResource;
         Base IResource.Owner => this;
 

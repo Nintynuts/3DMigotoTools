@@ -4,7 +4,8 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public class IASetIndexBuffer : Base, IResource
+
+    public class IASetIndexBuffer : Base, IResource, IInputAssembler
     {
         public IASetIndexBuffer(uint order, DrawCall owner) : base(order, owner)
         {
@@ -17,7 +18,6 @@ namespace Migoto.Log.Parser.DriverCall
         public ConstantBuffer Buffer { get; set; }
 
         Asset.Base IResource.Asset => Buffer;
-        int IResource.Index => -1;
         ulong IResource.Pointer => pIndexBuffer;
         Base IResource.Owner => this;
 

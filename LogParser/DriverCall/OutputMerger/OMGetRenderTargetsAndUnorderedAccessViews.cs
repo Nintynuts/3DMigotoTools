@@ -5,7 +5,8 @@ using Migoto.Log.Parser.Slot;
 namespace Migoto.Log.Parser.DriverCall
 {
     using OMGetRTsAndUAVs = OMGetRenderTargetsAndUnorderedAccessViews;
-    public class OMGetRenderTargetsAndUnorderedAccessViews : Slots<OMGetRTsAndUAVs, ResourceView>
+
+    public class OMGetRenderTargetsAndUnorderedAccessViews : Slots<OMGetRTsAndUAVs, ResourceView>, IOutputMerger
     {
         public OMGetRenderTargetsAndUnorderedAccessViews(uint order, DrawCall owner) : base(order, owner) { }
         public uint NumRTVs { get; set; }

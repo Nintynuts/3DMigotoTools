@@ -14,7 +14,6 @@ namespace Migoto.Log.Parser.DriverCall
         public uint SrcDepthPitch { get; set; }
 
         public Asset.Base Asset { get; private set; }
-        int IResource.Index => -1;
         ulong IResource.Pointer => pDstResource;
         Base IResource.Owner => this;
 

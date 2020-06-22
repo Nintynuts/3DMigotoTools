@@ -5,7 +5,7 @@ using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-    public class OMSetRenderTargets : Slots<OMSetRenderTargets, ResourceView>, IResourceSlots
+    public class OMSetRenderTargets : Slots<OMSetRenderTargets, ResourceView>, IResourceSlots, IOutputMerger
     {
         public OMSetRenderTargets(uint order, DrawCall owner) : base(order, owner) { }
 
@@ -32,6 +32,6 @@ namespace Migoto.Log.Parser.DriverCall
         public ResourceView D { get; set; }
         public ResourceView DepthStencil => D;
 
-        IEnumerable<IResource> IResourceSlots.AllSlots => AllSlots.Cast<IResource>();
+        IEnumerable<ISlotResource> IResourceSlots.AllSlots => AllSlots.Cast<ISlotResource>();
     }
 }

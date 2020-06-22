@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 
 namespace Migoto.Log.Parser
@@ -52,5 +53,8 @@ namespace Migoto.Log.Parser
 
         public static bool IsGeneric(this PropertyInfo prop, Type genericType)
             => prop.PropertyType.IsGenericType && genericType == prop.PropertyType.GetGenericTypeDefinition();
+
+        public static IEnumerable<PropertyInfo> OfType<T>(this PropertyInfo[] properties)
+            => properties.Where(p => typeof(T).IsAssignableFrom(p.PropertyType));
     }
 }

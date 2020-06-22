@@ -6,6 +6,6 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public interface IResourceSlots : ISlotsUsage
     {
-        IEnumerable<IResource> AllSlots { get; }
+        IEnumerable<ISlotResource> AllSlots { get; }
     }
 }

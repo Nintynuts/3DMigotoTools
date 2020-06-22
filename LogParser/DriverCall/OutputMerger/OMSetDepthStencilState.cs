@@ -1,6 +1,6 @@
 ﻿namespace Migoto.Log.Parser.DriverCall
 {
-    public class OMSetDepthStencilState : Base
+    public class OMSetDepthStencilState : Base, IOutputMerger
     {
         public OMSetDepthStencilState(uint order, DrawCall owner) : base(order, owner)
         {
