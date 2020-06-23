@@ -1,18 +1,10 @@
-﻿using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.DriverCall
 {
-    public class Unmap : Base, IResource
+    public class Unmap : SingleSlotBase
     {
-        public Unmap(uint order, DrawCall owner) : base(order, owner) { }
+        public Unmap(uint order) : base(order) { }
 
-        public ulong pResource { get; set; }
+        public ulong pResource { get => Pointer; set => Pointer = value; }
         public uint Subresource { get; set; }
-
-        public Asset.Base Asset { get; private set; }
-        ulong IResource.Pointer => pResource;
-        Base IResource.Owner => this;
-
-        public void UpdateAsset(Asset.Base asset) => Asset = asset;
     }
 }

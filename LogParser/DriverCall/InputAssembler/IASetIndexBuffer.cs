@@ -1,26 +1,16 @@
 ﻿
 using Migoto.Log.Parser.Asset;
-using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Parser.DriverCall
 {
-
-    public class IASetIndexBuffer : Base, IResource, IInputAssembler
+    public class IASetIndexBuffer : SingleSlotBase, IInputAssembler
     {
-        public IASetIndexBuffer(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public IASetIndexBuffer(uint order) : base(order) { }
 
-        public ulong pIndexBuffer { get; set; }
+        public ulong pIndexBuffer { get => Pointer; set => Pointer = value; }
         public uint Format { get; set; }
         public uint Offset { get; set; }
 
-        public Buffer Buffer { get; set; }
-
-        Asset.Base IResource.Asset => Buffer;
-        ulong IResource.Pointer => pIndexBuffer;
-        Base IResource.Owner => this;
-
-        public void UpdateAsset(Asset.Base asset) => Buffer = asset as Buffer;
+        public Buffer Buffer => Asset as Buffer;
     }
 }

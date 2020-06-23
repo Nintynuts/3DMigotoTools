@@ -32,8 +32,17 @@ namespace Migoto.Log.Parser
                 if (parser.Assets.TryGetValue(hash, out var asset))
                 {
                     var assetFile = TryOpenFile(Path.Combine(folder, $"{hash}.csv"));
-                    AssetWriter.Write(asset, assetFile);
-                    Console.WriteLine("Export complete");
+                    try
+                    {
+                        AssetWriter.Write(asset, assetFile);
+                        Console.WriteLine("Export complete");
+                    }
+                    catch (Exception e)
+                    {
+                        assetFile.Close();
+                        Console.WriteLine("Export failed:");
+                        Console.WriteLine(e);
+                    }
                 }
                 else
                 {

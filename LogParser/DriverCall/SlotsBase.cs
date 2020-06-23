@@ -18,7 +18,7 @@ namespace Migoto.Log.Parser.DriverCall
         private List<int> slotsMask;
         private List<TSlotType> allSlots;
 
-        protected SlotsBase(uint order, DrawCall owner) : base(order, owner)
+        protected SlotsBase(uint order) : base(order)
         {
             Slots = new SlotCollection<SlotsBase<This, TSlotType, TDeferred>, TSlotType>(this);
         }
@@ -60,11 +60,9 @@ namespace Migoto.Log.Parser.DriverCall
                 else
                     SlotsMask.Add(slotIdx);
             }
-            Slots.Where(s => s.Index >= other.StartSlot && s.Index < other.StartSlot + other.NumSlots).ToList().ForEach(s =>
-            {
-                s.SetOwner(null);
-                Slots.Remove(s);
-            });
+            Slots.Where(s => s.Index >= other.StartSlot && s.Index < other.StartSlot + other.NumSlots)
+                .ToList().ForEach(s => Slots.Remove(s));
+
             PointersMerged ??= new List<ulong> { Pointer };
             PointersMerged.Add(other.Pointer);
         }

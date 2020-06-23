@@ -7,7 +7,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class IASetVertexBuffers : Slots<IASetVertexBuffers, Resource>, IResourceSlots, IInputAssembler
     {
-        public IASetVertexBuffers(uint order, DrawCall owner) : base(order, owner) { }
+        public IASetVertexBuffers(uint order) : base(order) { }
 
         public uint NumBuffers { get => NumSlots; set => NumSlots = value; }
 

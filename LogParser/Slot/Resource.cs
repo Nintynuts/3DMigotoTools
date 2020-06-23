@@ -2,21 +2,25 @@
 {
     public class Resource : Base, ISlotResource
     {
-        public Resource(DriverCall.Base owner) : base(owner) { }
-
         public ulong Pointer { get; set; }
 
         public Asset.Base Asset { get; set; }
 
-        public void UpdateAsset(Asset.Base asset) => Asset = asset;
+        public void UpdateAsset(Asset.Base asset)
+        {
+            Asset?.Unregister(this);
+            Asset = asset;
+            if (Owner != null)
+                Asset?.Register(this);
+        }
 
         public override void SetOwner(DriverCall.Base newOwner)
         {
-            if (Owner != null)
-                Asset?.Uses.Remove(this);
+            if (newOwner == null && Owner != null)
+                Asset?.Unregister(this);
+            if (Owner == null && newOwner != null)
+                Asset?.Register(this);
             Owner = newOwner;
-            if (Owner != null)
-                Asset?.Uses.Add(this);
         }
     }
 }

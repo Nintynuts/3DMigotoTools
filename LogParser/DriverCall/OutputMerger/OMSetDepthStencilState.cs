@@ -2,9 +2,7 @@
 {
     public class OMSetDepthStencilState : Base, IOutputMerger
     {
-        public OMSetDepthStencilState(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public OMSetDepthStencilState(uint order) : base(order) { }
 
         public ulong pDepthStencilState { get; set; }
         public uint StencilRef { get; set; }

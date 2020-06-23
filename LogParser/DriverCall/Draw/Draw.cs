@@ -2,7 +2,7 @@
 {
     public class Draw : Base, IDraw
     {
-        public Draw(uint order, DrawCall owner) : base(order, owner) { }
+        public Draw(uint order) : base(order) { }
 
         public uint StartVertexLocation { get; set; }
 

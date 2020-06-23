@@ -12,36 +12,44 @@ using DriverCall = Migoto.Log.Parser.DriverCall.Base;
 
 namespace Migoto.Log.Converter
 {
-    using Column = Column<DriverCall>;
-    using IColumns = IColumns<DriverCall>;
     internal static class AssetWriter
     {
         public static void Write(Asset asset, StreamWriter output)
         {
-            var columns = new IColumns[]
+            var columns = new IColumns<DriverCall>[]
             {
-                new Column("FirstDrawCall", dc => dc.Owner.Index),
-                new Column("LastDrawCall", dc => GetLastUser(asset, dc)?.Index),
-                new Column("DriverCall", dc => dc.Name),
-                new Column("Slot", dc => dc is IResourceSlots resourceSlots ? (object)GetResource(asset, resourceSlots).Index : GetName(asset, dc)),
-                new Column("Shader(s)", dc => $"\"{asset.GetShadersBetween(dc).Select(s => s.Hex).Delimit('\n')}\""),
+                new Column<DriverCall, object>("Frame", dc => dc.Owner.Owner.Index),
+                new Column<DriverCall, object>("From", dc => dc.Owner.Index),
+                new Column<DriverCall, object>("To", dc => GetLastUser(asset, dc)?.Index),
+                new Column<DriverCall, object>("Method", dc => dc.Name),
+                new Column<DriverCall, object>("Slot", dc => GetResourceIdenfifier(asset, dc)),
+                new Column<DriverCall, object>("Shader(s)", dc => $"\"{asset.GetShadersUntilOverriden(dc).Select(s => s?.Hex).Delimit('\n')}\""),
             };
 
             output.WriteLine($"Type:,{GetAssetSubType(asset)},{asset.GetType().Name}");
+            output.WriteLine($"Slot,Count");
+            asset.Slots.ForEach(s => output.WriteLine($"{s.index},{s.slots.Count}"));
             output.WriteLine(columns.Headers());
             asset.LifeCycle.ForEach(dc => output.WriteLine(columns.Values(dc)));
             output.Close();
         }
 
-        private static IEnumerable<Shader> GetShadersBetween(this Asset asset, DriverCall driverCall)
+        private static DrawCall GetLastUser(Asset asset, DriverCall dc)
+            => (dc is IResourceSlots resourceSlots ? GetResource(asset, resourceSlots).LastUser?.Owner : null) ?? dc.LastUser ?? dc.Owner;
+
+        private static object GetResourceIdenfifier(Asset asset, DriverCall dc)
+            => dc is IResourceSlots resourceSlots ? (object)GetResource(asset, resourceSlots).Index : GetResourceName(asset, dc);
+
+        private static ISlotResource GetResource(Asset asset, IResourceSlots resourceSlots)
+            => resourceSlots.AllSlots.FirstOrDefault(s => s?.Asset == asset);
+
+        private static string GetResourceName(Asset asset, DriverCall dc)
+            => dc.GetType().GetProperties().OfType<Resource>().FirstOrDefault(p => dc.Get<Resource>(p).Asset == asset)?.Name;
+
+        private static IEnumerable<Shader> GetShadersUntilOverriden(this Asset asset, DriverCall driverCall)
         {
             var drawCalls = GetDrawCalls(driverCall.Owner, GetLastUser(asset, driverCall)).ToList();
             return drawCalls.Select(dc => GetShader(driverCall, dc)).Distinct().ToList();
-        }
-
-        private static DrawCall GetLastUser(Asset asset, DriverCall dc)
-        {
-            return (dc is IResourceSlots resourceSlots ? GetResource(asset, resourceSlots).LastUser?.Owner : null) ?? dc.LastUser ?? dc.Owner;
         }
 
         private static IEnumerable<DrawCall> GetDrawCalls(DrawCall firstUser, DrawCall lastUser)
@@ -56,7 +64,8 @@ namespace Migoto.Log.Converter
             }
         }
 
-        private static Shader GetShader(DriverCall drivercall, DrawCall drawCall) => GetShaderContext(drivercall, drawCall)?.SetShader.Shader;
+        private static Shader GetShader(DriverCall drivercall, DrawCall drawCall)
+            => GetShaderContext(drivercall, drawCall)?.SetShader.Shader;
 
         private static ShaderContext GetShaderContext(DriverCall drivercall, DrawCall drawCall)
         {
@@ -78,11 +87,5 @@ namespace Migoto.Log.Converter
                      : "Constant"
                  : string.Empty;
         }
-
-        private static string GetName(Asset asset, DriverCall dc)
-            => dc.GetType().GetProperties().OfType<Resource>().FirstOrDefault(p => dc.Get<Resource>(p).Asset == asset)?.Name;
-
-        private static ISlotResource GetResource(Asset asset, IResourceSlots resourceSlots)
-            => resourceSlots.AllSlots.FirstOrDefault(s => s.Asset == asset);
     }
 }

@@ -7,7 +7,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class SetConstantBuffers : ShaderSlots<SetConstantBuffers, Resource>, IResourceSlots
     {
-        public SetConstantBuffers(uint order, DrawCall owner) : base(order, owner) { }
+        public SetConstantBuffers(uint order) : base(order) { }
 
         public uint NumBuffers { get => NumSlots; set => NumSlots = value; }
 

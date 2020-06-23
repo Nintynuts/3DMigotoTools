@@ -8,7 +8,7 @@ namespace Migoto.Log.Parser.DriverCall
     {
         public static List<int> UsedSlots { get; } = new List<int>();
 
-        protected Slots(uint order, DrawCall owner) : base(order, owner) { }
+        protected Slots(uint order) : base(order) { }
 
         public override List<int> SlotsUsed => UsedSlots;
 

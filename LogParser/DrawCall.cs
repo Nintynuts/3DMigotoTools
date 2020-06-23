@@ -10,8 +10,9 @@ namespace Migoto.Log.Parser
     using OMGetRTsAndUAVs = OMGetRenderTargetsAndUnorderedAccessViews;
     using OMSetRTsAndUAVs = OMSetRenderTargetsAndUnorderedAccessViews;
 
-    public class DrawCall : IDeferred<DrawCall, DrawCall>
+    public class DrawCall : IDeferred<DrawCall, DrawCall>, IOwned<Frame>
     {
+        public Frame Owner { get; set; }
         public Deferred<DrawCall, DrawCall> Deferred { get; }
         public DrawCall Previous { get; }
 
@@ -33,6 +34,7 @@ namespace Migoto.Log.Parser
         }
 
         public uint Index { get; }
+
         public string Logic { get; set; }
 
         public IDraw Draw { get; set; }
@@ -68,6 +70,8 @@ namespace Migoto.Log.Parser
         internal Dictionary<ShaderType, ShaderContext> Shaders { get; }
 
         public ShaderContext Shader(ShaderType type) => Shaders[type];
+
+        public void SetOwner(Frame newOwner) => Owner = newOwner;
 
         public IEnumerable<string> MergeWarnings => Deferred.OfType<IMergable>().SelectMany(m => m.MergeWarnings);
 

@@ -13,7 +13,7 @@ namespace Migoto.Log.Parser.DriverCall
     {
         public static Dictionary<ShaderType, List<int>> UsedSlots { get; } = new Dictionary<ShaderType, List<int>>();
 
-        protected ShaderSlots(uint order, DrawCall owner) : base(order, owner) { }
+        protected ShaderSlots(uint order) : base(order) { }
 
         public override List<int> SlotsUsed => UsedSlots.GetOrAdd(ShaderType);
 

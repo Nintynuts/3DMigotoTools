@@ -8,7 +8,7 @@ namespace Migoto.Log.Parser.DriverCall
 
     public class OMGetRenderTargetsAndUnorderedAccessViews : Slots<OMGetRTsAndUAVs, ResourceView>, IOutputMerger
     {
-        public OMGetRenderTargetsAndUnorderedAccessViews(uint order, DrawCall owner) : base(order, owner) { }
+        public OMGetRenderTargetsAndUnorderedAccessViews(uint order) : base(order) { }
         public uint NumRTVs { get; set; }
         public ulong ppRenderTargetViews { get; set; }
         public ulong ppDepthStencilView { get; set; }

@@ -84,16 +84,11 @@ namespace Migoto.Log.Parser
                     return;
                 }
                 existing.SetOwner(null);
-                Overrides[name] = value;
-                value.SetOwner(owner);
                 if (warnIfExists)
                     collisions.Add($"{value.GetType().Name}: Already registered");
             }
-            else
-            {
-                Overrides[name] = value;
-                value.SetOwner(owner);
-            }
+            Overrides[name] = value;
+            value.SetOwner(owner);
         }
     }
 }

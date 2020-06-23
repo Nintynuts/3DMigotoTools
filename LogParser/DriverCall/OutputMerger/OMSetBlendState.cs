@@ -2,9 +2,7 @@
 {
     public class OMSetBlendState : Base, IOutputMerger
     {
-        public OMSetBlendState(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public OMSetBlendState(uint order) : base(order) { }
 
         public ulong pBlendState { get; set; }
         public ulong BlendFactor { get; set; }

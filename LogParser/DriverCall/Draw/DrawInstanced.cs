@@ -2,7 +2,7 @@
 {
     public class DrawInstanced : Base, IDraw, IDrawInstanced
     {
-        public DrawInstanced(uint order, DrawCall owner) : base(order, owner) { }
+        public DrawInstanced(uint order) : base(order) { }
 
         public uint? StartVertexLocation { get; set; }
         public uint? VertexCountPerInstance { get; set; }

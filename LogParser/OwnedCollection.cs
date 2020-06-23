@@ -24,7 +24,7 @@ namespace Migoto.Log.Parser
 
         public void Clear()
         {
-            items.ForEach(i => i.SetOwner(Owner));
+            items.ForEach(i => i.SetOwner(null));
             items.Clear();
         }
 

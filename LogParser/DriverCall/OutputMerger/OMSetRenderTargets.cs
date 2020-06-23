@@ -7,7 +7,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class OMSetRenderTargets : Slots<OMSetRenderTargets, ResourceView>, IResourceSlots, IOutputMerger
     {
-        public OMSetRenderTargets(uint order, DrawCall owner) : base(order, owner) { }
+        public OMSetRenderTargets(uint order) : base(order) { }
 
         public uint NumViews { get => NumSlots; set => NumSlots = value; }
 

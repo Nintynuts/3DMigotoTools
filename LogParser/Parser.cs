@@ -181,7 +181,7 @@ namespace Migoto.Log.Parser
                 return;
             }
             ShaderTypes.TryGetValue(methodName[0], out ShaderType? shaderType);
-            driverCall = driverCallType.Construct<DriverCall.Base>(driverCallNo, drawCall);
+            driverCall = driverCallType.Construct<DriverCall.Base>(driverCallNo);
             driverCallNo++;
 
             var argsMatches = methodArgPattern.Match(captures["args"].Value);
@@ -207,22 +207,20 @@ namespace Migoto.Log.Parser
                     shader.References.Add(drawCall);
                     setShader.Shader = shader;
                 }
-                else
+                else if (driverCall is SingleSlotBase singleSlot)
                 {
-                    var assetProp = driverCall.AssetProperty;
                     if (!Assets.TryGetValue(hash.Value, out var asset) || asset is Unknown)
                     {
                         var unknown = asset as Unknown;
 
-                        if (assetProp.PropertyType != typeof(Asset.Base))
-                            asset = assetProp.PropertyType.Construct<Asset.Base>();
+                        if (driverCall is IASetIndexBuffer indexBuffer)
+                            asset = new Buffer();
                         else if (unknown == null)
                             asset = new Unknown();
 
                         RegisterAsset(hash.Value, asset, unknown);
                     }
-                    asset.Uses.Add(driverCall as IResource);
-                    driverCall.Set(assetProp, asset);
+                    singleSlot.UpdateAsset(asset);
                 }
             }
             if (typeof(IDraw).IsAssignableFrom(driverCallType))
@@ -272,7 +270,7 @@ namespace Migoto.Log.Parser
                     throw new InvalidOperationException($"{driverCall.GetType().Name} doesn't have a slot property called {index}.");
                 slotType = slots.PropertyType;
             }
-            var slot = slotType.Construct<Resource>(driverCall);
+            var slot = slotType.Construct<Resource>();
 
             var view = captures["view"];
             if (view.Success)
@@ -296,8 +294,7 @@ namespace Migoto.Log.Parser
                     RegisterAsset(hash, asset, unknown);
                 }
 
-                slot.Set(slotType.GetProperty(nameof(Resource.Asset)), asset);
-                asset.Uses.Add(slot);
+                slot.UpdateAsset(asset);
             }
 
             if (useList)
@@ -307,6 +304,7 @@ namespace Migoto.Log.Parser
             }
             else
             {
+                slot.SetOwner(driverCall);
                 driverCall.Set(slots, slot);
             }
         }
@@ -317,8 +315,7 @@ namespace Migoto.Log.Parser
 
             if (unknown != null)
             {
-                asset.Uses.AddRange(unknown.Uses);
-                unknown.Uses.ForEach(s => s.UpdateAsset(asset));
+                unknown.ReplaceWith(asset);
                 Assets[hash] = asset;
             }
             else
@@ -329,12 +326,12 @@ namespace Migoto.Log.Parser
 
         private void ProcessSamplerSlot(GroupCollection captures)
         {
-            var samplerSlots = driverCall.SlotsProperty;
-            var sampler = new Sampler(driverCall);
+            if (!(driverCall is SetSamplers samplers))
+                throw new ArgumentException("Sampler slots without preceding SetSampler");
 
-            var handle = captures["handle"].Value;
-            sampler.SetFromString(nameof(Sampler.Handle), handle);
-            driverCall.Add(samplerSlots, sampler);
+            var sampler = new Sampler();
+            sampler.SetFromString(nameof(Sampler.Handle), captures["handle"].Value);
+            samplers.Samplers.Add(sampler);
         }
 
         private void RecordUnhandled(string methodName)

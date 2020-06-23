@@ -10,10 +10,5 @@
         public virtual void SetOwner(DriverCall.Base newOwner) => Owner = newOwner;
 
         public void SetLastUser(DriverCall.Base lastUser) => LastUser = lastUser;
-
-        public Base(DriverCall.Base owner)
-        {
-            Owner = owner;
-        }
     }
 }

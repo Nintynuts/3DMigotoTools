@@ -4,9 +4,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class SetShader : Base
     {
-        public SetShader(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public SetShader(uint order) : base(order) { }
 
         public ulong pShader { get; set; }
 

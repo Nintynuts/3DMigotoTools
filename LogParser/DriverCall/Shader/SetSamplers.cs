@@ -6,7 +6,7 @@ namespace Migoto.Log.Parser.DriverCall
 {
     public class SetSamplers : ShaderSlots<SetSamplers, Sampler>
     {
-        public SetSamplers(uint order, DrawCall owner) : base(order, owner) { }
+        public SetSamplers(uint order) : base(order) { }
 
         public uint NumSamplers { get => NumSlots; set => NumSlots = value; }
 

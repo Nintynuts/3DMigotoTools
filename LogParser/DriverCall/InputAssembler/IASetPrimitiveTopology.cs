@@ -100,7 +100,7 @@
 
     public class IASetPrimitiveTopology : Base, IInputAssembler
     {
-        public IASetPrimitiveTopology(uint order, DrawCall owner) : base(order, owner) { }
+        public IASetPrimitiveTopology(uint order) : base(order) { }
 
         public D3D_PRIMITIVE_TOPOLOGY Topology { get; set; }
     }

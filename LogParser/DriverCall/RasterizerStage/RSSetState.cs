@@ -2,9 +2,7 @@
 {
     public class RSSetState : Base
     {
-        public RSSetState(uint order, DrawCall owner) : base(order, owner)
-        {
-        }
+        public RSSetState(uint order) : base(order) { }
 
         public ulong pRasterizerState { get; set; }
     }

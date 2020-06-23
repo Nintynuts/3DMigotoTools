@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using Migoto.Log.Parser.Asset;
-using Migoto.Log.Parser.DriverCall;
-
 namespace Migoto.Log.Converter
 {
     internal interface IColumns<T>
@@ -13,64 +10,53 @@ namespace Migoto.Log.Converter
         IEnumerable<string> GetValues(T dc);
     }
 
-    internal class HashColumnSet<T> : IColumns<T>
+    internal class ColumnSet<TContext, TItem> : IColumns<TContext>
     {
         private readonly string name;
 
-        private readonly Func<T, IResourceSlots> provider;
+        private readonly Func<TContext, IEnumerable<TItem>> provider;
+        private readonly Func<TContext, TItem, string> selector;
         private readonly IEnumerable<int> columns;
 
-        public HashColumnSet(string name, Func<T, IResourceSlots> provider, IEnumerable<int> columns)
+        public ColumnSet(string name, Func<TContext, IEnumerable<TItem>> provider, Func<TContext, TItem, string> selector, IEnumerable<int> columns)
         {
             this.name = name;
             this.provider = provider;
+            this.selector = selector;
             this.columns = columns.OrderBy(i => i);
         }
 
         public IEnumerable<string> Columns => columns.Select(i => $"{name}{i}");
 
-        public IEnumerable<string> GetValues(T ctx)
+        public IEnumerable<string> GetValues(TContext ctx)
         {
             var items = provider(ctx);
             if (items == null)
                 return columns.Select(_ => string.Empty);
 
-            return items.AllSlots.Select(r => r == null ? string.Empty : r.Asset?.Hex ?? "No Hash");
+            return items.Select(i => selector(ctx, i));
         }
     }
 
-    internal class HashColumn<T> : IColumns<T>
+    internal class Column<TContext, TItem> : IColumns<TContext>
     {
         private readonly string name;
 
-        private readonly Func<T, IHash> provider;
+        private readonly Func<TContext, TItem> provider;
+        private readonly Func<TContext, TItem, string> selector;
 
-        public HashColumn(string name, Func<T, IHash> provider)
+        public Column(string name, Func<TContext, TItem> provider, Func<TContext, TItem, string> selector = null)
         {
             this.name = name;
             this.provider = provider;
+            this.selector = selector ?? GetValue;
         }
+
+        private static string GetValue(TContext ctx, TItem item) => item?.ToString() ?? string.Empty;
 
         public IEnumerable<string> Columns => new[] { name };
 
-        public IEnumerable<string> GetValues(T ctx) => new[] { provider(ctx)?.Hex ?? string.Empty };
-    }
-
-    internal class Column<T> : IColumns<T>
-    {
-        private readonly string name;
-
-        private readonly Func<T, object> provider;
-
-        public Column(string name, Func<T, object> provider)
-        {
-            this.name = name;
-            this.provider = provider;
-        }
-
-        public IEnumerable<string> Columns => new[] { name };
-
-        public IEnumerable<string> GetValues(T ctx) => new[] { provider(ctx)?.ToString() ?? string.Empty };
+        public IEnumerable<string> GetValues(TContext ctx) => new[] { selector(ctx, provider(ctx)) };
     }
 
     internal static class CsvExtensions
