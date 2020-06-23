@@ -2,28 +2,26 @@
 using System.IO;
 using System.Linq;
 
-using Migoto.Log.Parser;
-using Migoto.Log.Parser.Asset;
-using Migoto.Log.Parser.DriverCall;
-using Migoto.Log.Parser.Slot;
-
-using Asset = Migoto.Log.Parser.Asset.Base;
-using DriverCall = Migoto.Log.Parser.DriverCall.Base;
 
 namespace Migoto.Log.Converter
 {
+    using Parser;
+    using Parser.ApiCalls;
+    using Parser.Assets;
+    using Parser.Slots;
+
     internal static class AssetWriter
     {
         public static void Write(Asset asset, StreamWriter output)
         {
-            var columns = new IColumns<DriverCall>[]
+            var columns = new IColumns<ApiCall>[]
             {
-                new Column<DriverCall, object>("Frame", dc => dc.Owner.Owner.Index),
-                new Column<DriverCall, object>("From", dc => dc.Owner.Index),
-                new Column<DriverCall, object>("To", dc => GetLastUser(asset, dc)?.Index),
-                new Column<DriverCall, object>("Method", dc => dc.Name),
-                new Column<DriverCall, object>("Slot", dc => GetResourceIdenfifier(asset, dc)),
-                new Column<DriverCall, object>("Shader(s)", dc => $"\"{asset.GetShadersUntilOverriden(dc).Select(s => s?.Hex).Delimit('\n')}\""),
+                new Column<ApiCall, object>("Frame", dc => dc.Owner.Owner.Index),
+                new Column<ApiCall, object>("From", dc => dc.Owner.Index),
+                new Column<ApiCall, object>("To", dc => GetLastUser(asset, dc)?.Index),
+                new Column<ApiCall, object>("Method", dc => dc.Name),
+                new Column<ApiCall, object>("Slot", dc => GetResourceIdenfifier(asset, dc)),
+                new Column<ApiCall, object>("Shader(s)", dc => $"\"{asset.GetShadersUntilOverriden(dc).Select(s => s?.Hex).Delimit('\n')}\""),
             };
 
             output.WriteLine($"Type:,{GetAssetSubType(asset)},{asset.GetType().Name}");
@@ -34,22 +32,22 @@ namespace Migoto.Log.Converter
             output.Close();
         }
 
-        private static DrawCall GetLastUser(Asset asset, DriverCall dc)
-            => (dc is IResourceSlots resourceSlots ? GetResource(asset, resourceSlots).LastUser?.Owner : null) ?? dc.LastUser ?? dc.Owner;
+        private static DrawCall GetLastUser(Asset asset, ApiCall dc)
+            => (dc is IMultiSlot multiSlot ? GetResource(asset, multiSlot).LastUser?.Owner : null) ?? dc.LastUser ?? dc.Owner;
 
-        private static object GetResourceIdenfifier(Asset asset, DriverCall dc)
-            => dc is IResourceSlots resourceSlots ? (object)GetResource(asset, resourceSlots).Index : GetResourceName(asset, dc);
+        private static object GetResourceIdenfifier(Asset asset, ApiCall dc)
+            => dc is IMultiSlot multiSlot ? (object)GetResource(asset, multiSlot).Index : GetResourceName(asset, dc);
 
-        private static ISlotResource GetResource(Asset asset, IResourceSlots resourceSlots)
-            => resourceSlots.AllSlots.FirstOrDefault(s => s?.Asset == asset);
+        private static IResourceSlot GetResource(Asset asset, IMultiSlot multiSlot)
+            => multiSlot.AllSlots.FirstOrDefault(s => s?.Asset == asset);
 
-        private static string GetResourceName(Asset asset, DriverCall dc)
+        private static string GetResourceName(Asset asset, ApiCall dc)
             => dc.GetType().GetProperties().OfType<Resource>().FirstOrDefault(p => dc.Get<Resource>(p).Asset == asset)?.Name;
 
-        private static IEnumerable<Shader> GetShadersUntilOverriden(this Asset asset, DriverCall driverCall)
+        private static IEnumerable<Shader> GetShadersUntilOverriden(this Asset asset, ApiCall MethodBase)
         {
-            var drawCalls = GetDrawCalls(driverCall.Owner, GetLastUser(asset, driverCall)).ToList();
-            return drawCalls.Select(dc => GetShader(driverCall, dc)).Distinct().ToList();
+            var drawCalls = GetDrawCalls(MethodBase.Owner, GetLastUser(asset, MethodBase)).ToList();
+            return drawCalls.Select(dc => GetShader(MethodBase, dc)).Distinct().ToList();
         }
 
         private static IEnumerable<DrawCall> GetDrawCalls(DrawCall firstUser, DrawCall lastUser)
@@ -64,14 +62,14 @@ namespace Migoto.Log.Converter
             }
         }
 
-        private static Shader GetShader(DriverCall drivercall, DrawCall drawCall)
-            => GetShaderContext(drivercall, drawCall)?.SetShader.Shader;
+        private static Shader GetShader(ApiCall MethodBase, DrawCall drawCall)
+            => GetShaderContext(MethodBase, drawCall)?.SetShader.Shader;
 
-        private static ShaderContext GetShaderContext(DriverCall drivercall, DrawCall drawCall)
+        private static ShaderContext GetShaderContext(ApiCall MethodBase, DrawCall drawCall)
         {
-            return drivercall is IShaderCall shaderCall ? drawCall.Shader(shaderCall.ShaderType)
-                 : drivercall is IInputAssembler ? drawCall.Shader(ShaderType.Vertex)
-                 : drivercall is IOutputMerger ? drawCall.Shader(ShaderType.Pixel)
+            return MethodBase is IShaderCall shaderCall ? drawCall.Shader(shaderCall.ShaderType)
+                 : MethodBase is IInputAssembler ? drawCall.Shader(ShaderType.Vertex)
+                 : MethodBase is IOutputMerger ? drawCall.Shader(ShaderType.Pixel)
                  : null;
         }
 

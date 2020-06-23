@@ -2,9 +2,12 @@
 using System.Linq;
 using System.Reflection;
 
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public abstract class Base : IOwned<DrawCall>, IOverriden<DrawCall>
+    using Assets;
+    using Slots;
+
+    public abstract class ApiCall : IOwned<DrawCall>, IOverriden<DrawCall>
     {
         public uint Order { get; }
         public DrawCall Owner { get; private set; }
@@ -15,7 +18,7 @@ namespace Migoto.Log.Parser.DriverCall
 
         public virtual string Name => GetType().Name;
 
-        protected Base(uint order)
+        protected ApiCall(uint order)
         {
             Order = order;
         }
@@ -23,9 +26,9 @@ namespace Migoto.Log.Parser.DriverCall
         public PropertyInfo SlotsProperty
             => GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsGenericType
                && p.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>)
-               && typeof(Slot.Base).IsAssignableFrom(p.PropertyType.GetGenericArguments()[0]));
+               && typeof(Slot).IsAssignableFrom(p.PropertyType.GetGenericArguments()[0]));
 
         public PropertyInfo AssetProperty
-            => GetType().GetProperties().FirstOrDefault(p => p.CanWrite && typeof(Asset.Base).IsAssignableFrom(p.PropertyType));
+            => GetType().GetProperties().FirstOrDefault(p => p.CanWrite && typeof(Asset).IsAssignableFrom(p.PropertyType));
     }
 }

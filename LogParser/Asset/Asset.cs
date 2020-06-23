@@ -2,17 +2,20 @@
 using System.ComponentModel;
 using System.Linq;
 
-using Migoto.Log.Parser.Slot;
 
-namespace Migoto.Log.Parser.Asset
+namespace Migoto.Log.Parser.Assets
 {
+    using ApiCalls;
+
+    using Slots;
+
     public interface IHash
     {
         string Hex { get; }
     }
 
     [System.Diagnostics.DebuggerDisplay("{GetType().Name}: {Hash.ToString(\"X\")}")]
-    public abstract class Base : IHash
+    public abstract class Asset : IHash
     {
         private readonly List<IResource> uses = new List<IResource>();
 
@@ -25,10 +28,10 @@ namespace Migoto.Log.Parser.Asset
         public void Register(IResource resource) => uses.Add(resource);
         public void Unregister(IResource resource) => uses.Remove(resource);
 
-        public List<(int index, List<ISlotResource> slots)> Slots
-            => Uses.OfType<ISlotResource>().GroupBy(s => s.Index).OrderBy(g => g.Key).Select(g => (index: g.Key, slots: g.ToList())).ToList();
+        public List<(int index, List<IResourceSlot> slots)> Slots
+            => Uses.OfType<IResourceSlot>().GroupBy(s => s.Index).OrderBy(g => g.Key).Select(g => (index: g.Key, slots: g.ToList())).ToList();
 
-        public List<DriverCall.Base> LifeCycle
+        public List<ApiCall> LifeCycle
             => Uses.Select(s => s.Owner).OrderBy(dc => dc.Owner.Owner.Index).ThenBy(dc => dc.Owner.Index).ThenBy(dc => dc.Order).ToList();
     }
 }

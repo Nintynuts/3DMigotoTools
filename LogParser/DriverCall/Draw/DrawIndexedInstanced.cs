@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall.Draw
+﻿namespace Migoto.Log.Parser.ApiCalls.Draw
 {
-    public class DrawIndexedInstanced : Base, IDraw, IDrawInstanced, IDrawIndexed
+    public class DrawIndexedInstanced : ApiCall, IDrawInstanced, IDrawIndexed
     {
         public DrawIndexedInstanced(uint order) : base(order) { }
 

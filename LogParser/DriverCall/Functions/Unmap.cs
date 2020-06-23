@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class Unmap : SingleSlotBase
+    public class Unmap : SingleSlot
     {
         public Unmap(uint order) : base(order) { }
 

@@ -5,15 +5,15 @@ using System.Runtime.CompilerServices;
 
 namespace Migoto.Log.Parser
 {
-    public interface IDeferred<TDeferred, TOwner>
-        where TDeferred : class, IDeferred<TDeferred, TOwner>
+    public interface IDeferred<TFallback, TOwner>
+        where TFallback : class, IDeferred<TFallback, TOwner>
         where TOwner : class
     {
-        Deferred<TDeferred, TOwner> Deferred { get; }
+        Deferred<TFallback, TOwner> Deferred { get; }
     }
 
-    public class Deferred<TDeferred, TOwner>
-        where TDeferred : class, IDeferred<TDeferred, TOwner>
+    public class Deferred<TFallback, TOwner>
+        where TFallback : class, IDeferred<TFallback, TOwner>
         where TOwner : class
     {
         private readonly TOwner owner;
@@ -29,9 +29,9 @@ namespace Migoto.Log.Parser
 
         public IEnumerable<string> Collisions => collisions;
 
-        private TDeferred Fallback { get; }
+        private TFallback Fallback { get; }
 
-        public Deferred(TOwner owner, TDeferred fallback)
+        public Deferred(TOwner owner, TFallback fallback)
         {
             this.owner = owner;
             Fallback = fallback;

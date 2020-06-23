@@ -1,11 +1,10 @@
-﻿
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public abstract class ClearBase : Base, ISingleSlot
+    using Slots;
+
+    public abstract class Clear : ApiCall, ISingleSlot
     {
-        protected ClearBase(uint order) : base(order) { }
+        protected Clear(uint order) : base(order) { }
 
         public ResourceView Target { get; set; }
 

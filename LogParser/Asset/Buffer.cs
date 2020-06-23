@@ -1,10 +1,10 @@
 ﻿using System.Linq;
 
-using Migoto.Log.Parser.DriverCall;
-
-namespace Migoto.Log.Parser.Asset
+namespace Migoto.Log.Parser.Assets
 {
-    public class Buffer : Base
+    using ApiCalls;
+
+    public class Buffer : Asset
     {
         public bool IsIndexBuffer => Uses.Any(s => s.Owner is IASetIndexBuffer);
         public bool IsVertexBuffer => Uses.Any(s => s.Owner is IASetVertexBuffers);

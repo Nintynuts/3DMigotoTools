@@ -1,14 +1,16 @@
 ﻿using System.Collections.Generic;
 
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public abstract class Slots<This, TSlotType> : SlotsBase<This, TSlotType, DrawCall>
-        where This : SlotsBase<This, TSlotType, DrawCall>
-        where TSlotType : Slot.Base
+    using Slots;
+
+    public abstract class MultiSlot<This, TSlotType> : MultiSlotBase<This, TSlotType, DrawCall>
+        where This : MultiSlotBase<This, TSlotType, DrawCall>
+        where TSlotType : Slot
     {
         public static List<int> UsedSlots { get; } = new List<int>();
 
-        protected Slots(uint order) : base(order) { }
+        protected MultiSlot(uint order) : base(order) { }
 
         public override List<int> SlotsUsed => UsedSlots;
 

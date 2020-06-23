@@ -1,22 +1,28 @@
 ﻿
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public abstract class SingleSlotBase : Base, IResource, ISingleSlot
+    using Assets;
+    using Slots;
+
+    public interface ISingleSlot
     {
-        protected SingleSlotBase(uint order) : base(order) { }
+        IResource Target { get; }
+    }
 
-        public Asset.Base Asset { get; protected set; }
+    public abstract class SingleSlot : ApiCall, IResource, ISingleSlot
+    {
+        protected SingleSlot(uint order) : base(order) { }
 
-        Base IResource.Owner => this;
+        public Asset Asset { get; protected set; }
+
+        ApiCall IResource.Owner => this;
 
         ulong IResource.Pointer => Pointer;
         protected ulong Pointer { get; set; }
 
         IResource ISingleSlot.Target => this;
 
-        public void UpdateAsset(Asset.Base asset)
+        public void UpdateAsset(Asset asset)
         {
             Asset?.Unregister(this);
             Asset = asset;

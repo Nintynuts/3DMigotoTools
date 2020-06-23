@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class UpdateSubresource : SingleSlotBase
+    public class UpdateSubresource : SingleSlot
     {
         public UpdateSubresource(uint order) : base(order) { }
 

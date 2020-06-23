@@ -1,9 +1,9 @@
 ﻿using System.Linq;
 
-namespace Migoto.Log.Parser.Asset
+namespace Migoto.Log.Parser.Assets
 {
-    class Unknown : Base
+    class Unknown : Asset
     {
-        internal void ReplaceWith(Base asset) => Uses.ToList().ForEach(s => s.UpdateAsset(asset));
+        internal void ReplaceWith(Asset asset) => Uses.ToList().ForEach(s => s.UpdateAsset(asset));
     }
 }

@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class IASetInputLayout : Base, IInputAssembler
+    public class IASetInputLayout : ApiCall, IInputAssembler
     {
         public IASetInputLayout(uint order) : base(order) { }
 

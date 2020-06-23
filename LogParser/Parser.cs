@@ -5,14 +5,12 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-using Migoto.Log.Parser.Asset;
-using Migoto.Log.Parser.DriverCall;
-using Migoto.Log.Parser.DriverCall.Draw;
-using Migoto.Log.Parser.Slot;
-
 namespace Migoto.Log.Parser
 {
-    using Buffer = Asset.Buffer;
+    using ApiCalls;
+    using ApiCalls.Draw;
+    using Assets;
+    using Slots;
 
     public class Parser
     {
@@ -26,7 +24,7 @@ namespace Migoto.Log.Parser
         private readonly Regex samplerPattern = new Regex(@"\s+(?'index'\w+): handle=(?'handle'\w+)");
         private readonly Regex logicPattern = new Regex(@"3DMigoto (?'logic'.*)");
 
-        private readonly Dictionary<string, Type> driverCallTypes = typeof(DriverCall.Base).Assembly.GetTypes().Where(t => typeof(DriverCall.Base).IsAssignableFrom(t) && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
+        private readonly Dictionary<string, Type> apiCallTypes = typeof(ApiCall).Assembly.GetTypes().Where(t => typeof(ApiCall).IsAssignableFrom(t) && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
         private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.IsGeneric(typeof(ICollection<>)) || p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
         private readonly MethodInfo shader = typeof(DrawCall).GetMethod(nameof(DrawCall.Shader));
         private readonly Dictionary<Type, PropertyInfo> shaderContextProps = typeof(ShaderContext).GetProperties().Where(p => p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
@@ -37,19 +35,19 @@ namespace Migoto.Log.Parser
         private readonly Dictionary<char, ShaderType> ShaderTypes
             = Enums.Values<ShaderType>().ToDictionary(s => s.ToString()[0], s => s);
 
-        public readonly Dictionary<string, int> driverCallSkipped = new Dictionary<string, int>();
+        public readonly Dictionary<string, int> apiCallsSkipped = new Dictionary<string, int>();
         public readonly Dictionary<string, int> frameSkipped = new Dictionary<string, int>();
 
         public List<Frame> Frames { get; } = new List<Frame>();
-        public Dictionary<string, Asset.Base> Assets { get; } = new Dictionary<string, Asset.Base>();
+        public Dictionary<string, Asset> Assets { get; } = new Dictionary<string, Asset>();
         public Dictionary<string, Shader> Shaders { get; } = new Dictionary<string, Shader>();
 
         private uint frameNo = 0;
         private Frame frame = new Frame(0); // For Present post logic
         private uint drawCallNo = 0;
-        private uint driverCallNo = 0;
+        private uint apiCallNo = 0;
         private DrawCall drawCall = new DrawCall(0, null);
-        private DriverCall.Base driverCall = null;
+        private ApiCall apiCall = null;
 
         public Parser(StreamReader stream, Action<string> logger)
         {
@@ -94,14 +92,14 @@ namespace Migoto.Log.Parser
 
         private void ParseLine(string line)
         {
-            var driverCallMatch = methodPattern.Match(line);
-            if (driverCallMatch.Success)
+            var apiCallMatch = methodPattern.Match(line);
+            if (apiCallMatch.Success)
             {
                 var indexMatch = indexPattern.Match(line);
                 if (indexMatch.Success)
                     ProcessFrameAndDrawCall(indexMatch.Groups);
 
-                ProcessDriverCall(driverCallMatch.Groups);
+                ProcessApiCall(apiCallMatch.Groups);
                 return;
             }
             var slotMatch = resourcePattern.Match(line);
@@ -165,24 +163,24 @@ namespace Migoto.Log.Parser
                 if (drawCall != null)
                     LogUnhandledForDrawCall();
                 drawCallNo = thisDrawCallNo;
-                driverCallNo = 0;
+                apiCallNo = 0;
                 drawCall = new DrawCall(thisDrawCallNo, drawCall);
                 frame.DrawCalls.Add(drawCall);
             }
         }
 
-        private void ProcessDriverCall(GroupCollection captures)
+        private void ProcessApiCall(GroupCollection captures)
         {
             var methodName = captures["method"].Value;
-            if (!(driverCallTypes.TryGetValue(methodName, out var driverCallType)
-                || driverCallTypes.TryGetValue(methodName.Substring(2), out driverCallType)))
+            if (!(apiCallTypes.TryGetValue(methodName, out var apiCallType)
+                || apiCallTypes.TryGetValue(methodName.Substring(2), out apiCallType)))
             {
                 RecordUnhandled(methodName);
                 return;
             }
             ShaderTypes.TryGetValue(methodName[0], out ShaderType? shaderType);
-            driverCall = driverCallType.Construct<DriverCall.Base>(driverCallNo);
-            driverCallNo++;
+            apiCall = apiCallType.Construct<ApiCall>(apiCallNo);
+            apiCallNo++;
 
             var argsMatches = methodArgPattern.Match(captures["args"].Value);
             while (argsMatches.Success)
@@ -190,13 +188,13 @@ namespace Migoto.Log.Parser
                 string name = argsMatches.Groups["name"].Value;
                 if (shaderType.HasValue)
                     name = name.Replace(shaderType.Value.ToString(), "");
-                driverCall.SetFromString(name, argsMatches.Groups["value"].Value);
+                apiCall.SetFromString(name, argsMatches.Groups["value"].Value);
                 argsMatches = argsMatches.NextMatch();
             }
             var hash = captures["hash"];
             if (hash.Success)
             {
-                if (driverCall is SetShader setShader)
+                if (apiCall is SetShader setShader)
                 {
                     if (!Shaders.TryGetValue(hash.Value, out var shader))
                     {
@@ -207,13 +205,13 @@ namespace Migoto.Log.Parser
                     shader.References.Add(drawCall);
                     setShader.Shader = shader;
                 }
-                else if (driverCall is SingleSlotBase singleSlot)
+                else if (apiCall is SingleSlot singleSlot)
                 {
                     if (!Assets.TryGetValue(hash.Value, out var asset) || asset is Unknown)
                     {
                         var unknown = asset as Unknown;
 
-                        if (driverCall is IASetIndexBuffer indexBuffer)
+                        if (apiCall is IASetIndexBuffer indexBuffer)
                             asset = new Buffer();
                         else if (unknown == null)
                             asset = new Unknown();
@@ -223,23 +221,23 @@ namespace Migoto.Log.Parser
                     singleSlot.UpdateAsset(asset);
                 }
             }
-            if (typeof(IDraw).IsAssignableFrom(driverCallType))
-                driverCallType = typeof(IDraw);
-            if (shaderType.HasValue && shaderContextProps.TryGetValue(driverCallType, out var property))
+            if (typeof(IDraw).IsAssignableFrom(apiCallType))
+                apiCallType = typeof(IDraw);
+            if (shaderType.HasValue && shaderContextProps.TryGetValue(apiCallType, out var property))
             {
                 var shaderCtx = drawCall.Shader(shaderType.Value);
-                driverCall.GetType().GetProperty(nameof(ShaderType))?.SetValue(driverCall, shaderType.Value);
-                shaderCtx.Set(property, driverCall);
-                driverCall = shaderCtx.Get<DriverCall.Base>(property);
+                apiCall.GetType().GetProperty(nameof(ShaderType))?.SetValue(apiCall, shaderType.Value);
+                shaderCtx.Set(property, apiCall);
+                apiCall = shaderCtx.Get<ApiCall>(property);
             }
-            else if (drawCallProps.TryGetValue(driverCallType, out property))
+            else if (drawCallProps.TryGetValue(apiCallType, out property))
             {
-                drawCall.Set(property, driverCall);
-                driverCall = drawCall.Get<DriverCall.Base>(property);
+                drawCall.Set(property, apiCall);
+                apiCall = drawCall.Get<ApiCall>(property);
             }
-            else if (drawCallProps.TryGetValue(typeof(ICollection<>).MakeGenericType(driverCallType), out var listProperty))
+            else if (drawCallProps.TryGetValue(typeof(ICollection<>).MakeGenericType(apiCallType), out var listProperty))
             {
-                drawCall.Add(listProperty, driverCall);
+                drawCall.Add(listProperty, apiCall);
             }
             else
             {
@@ -257,17 +255,17 @@ namespace Migoto.Log.Parser
 
             if (useList)
             {
-                slots = driverCall.SlotsProperty;
+                slots = apiCall.SlotsProperty;
                 if (slots == null)
-                    throw new InvalidOperationException($"{driverCall.GetType().Name} doesn't have a slots property.");
+                    throw new InvalidOperationException($"{apiCall.GetType().Name} doesn't have a slots property.");
                 slotType = slots.PropertyType.GetGenericArguments()[0];
             }
             else
             {
-                slots = driverCall.GetType().GetProperty(index);
-                slots ??= driverCall.GetType().GetProperties().SingleOrDefault(p => typeof(Slot.Base).IsAssignableFrom(p.PropertyType));
+                slots = apiCall.GetType().GetProperty(index);
+                slots ??= apiCall.GetType().GetProperties().SingleOrDefault(p => typeof(Slot).IsAssignableFrom(p.PropertyType));
                 if (slots == null)
-                    throw new InvalidOperationException($"{driverCall.GetType().Name} doesn't have a slot property called {index}.");
+                    throw new InvalidOperationException($"{apiCall.GetType().Name} doesn't have a slot property called {index}.");
                 slotType = slots.PropertyType;
             }
             var slot = slotType.Construct<Resource>();
@@ -300,18 +298,18 @@ namespace Migoto.Log.Parser
             if (useList)
             {
                 slot.SetFromString(nameof(Resource.Index), captures["index"].Value);
-                driverCall.Add(slots, slot);
+                apiCall.Add(slots, slot);
             }
             else
             {
-                slot.SetOwner(driverCall);
-                driverCall.Set(slots, slot);
+                slot.SetOwner(apiCall);
+                apiCall.Set(slots, slot);
             }
         }
 
-        private void RegisterAsset(string hash, Asset.Base asset, Unknown unknown = null)
+        private void RegisterAsset(string hash, Asset asset, Unknown unknown = null)
         {
-            asset.SetFromString(nameof(Asset.Base.Hash), hash);
+            asset.SetFromString(nameof(Log.Parser.Assets.Asset.Hash), hash);
 
             if (unknown != null)
             {
@@ -326,7 +324,7 @@ namespace Migoto.Log.Parser
 
         private void ProcessSamplerSlot(GroupCollection captures)
         {
-            if (!(driverCall is SetSamplers samplers))
+            if (!(apiCall is SetSamplers samplers))
                 throw new ArgumentException("Sampler slots without preceding SetSampler");
 
             var sampler = new Sampler();
@@ -336,9 +334,9 @@ namespace Migoto.Log.Parser
 
         private void RecordUnhandled(string methodName)
         {
-            if (!driverCallSkipped.ContainsKey(methodName))
-                driverCallSkipped[methodName] = 0;
-            driverCallSkipped[methodName]++;
+            if (!apiCallsSkipped.ContainsKey(methodName))
+                apiCallsSkipped[methodName] = 0;
+            apiCallsSkipped[methodName]++;
 
             if (!frameSkipped.ContainsKey(methodName))
                 frameSkipped[methodName] = 0;
@@ -347,7 +345,7 @@ namespace Migoto.Log.Parser
 
         private void LogUnhandledForDrawCall()
         {
-            var messages = driverCallSkipped.Select(call => $"{call.Value}x {call.Key} not supported")
+            var messages = apiCallsSkipped.Select(call => $"{call.Value}x {call.Key} not supported")
                 .Concat(drawCall.MergeWarnings)
                 .Concat(drawCall.Collisions);
 
@@ -358,7 +356,7 @@ namespace Migoto.Log.Parser
 
             messages.ForEach(msg => logger("  " + msg));
 
-            driverCallSkipped.Clear();
+            apiCallsSkipped.Clear();
         }
 
         private void LogUnhandledForFrame()

@@ -1,4 +1,4 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
     using OMGetRTsAndUAVs = OMGetRenderTargetsAndUnorderedAccessViews;
 

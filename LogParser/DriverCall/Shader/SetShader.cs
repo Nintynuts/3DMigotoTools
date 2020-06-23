@@ -1,15 +1,13 @@
-﻿using Migoto.Log.Parser.Asset;
-
-namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class SetShader : Base
+    using Assets;
+
+    public class SetShader : ApiCall
     {
         public SetShader(uint order) : base(order) { }
 
         public ulong pShader { get; set; }
-
         public ulong ppClassInstances { get; set; }
-
         public uint NumClassInstances { get; set; }
 
         public Shader Shader { get; set; }

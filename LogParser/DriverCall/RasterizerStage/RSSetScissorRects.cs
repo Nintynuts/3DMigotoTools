@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class RSSetScissorRects : Base
+    public class RSSetScissorRects : ApiCall
     {
         public RSSetScissorRects(uint order) : base(order) { }
 

@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using Migoto.Log.Parser.DriverCall;
-using Migoto.Log.Parser.DriverCall.Draw;
 
 namespace Migoto.Log.Parser
 {
-    using OMGetRTsAndUAVs = OMGetRenderTargetsAndUnorderedAccessViews;
-    using OMSetRTsAndUAVs = OMSetRenderTargetsAndUnorderedAccessViews;
+    using ApiCalls;
+    using ApiCalls.Draw;
+
+    using OMGetRTsAndUAVs = ApiCalls.OMGetRenderTargetsAndUnorderedAccessViews;
+    using OMSetRTsAndUAVs = ApiCalls.OMSetRenderTargetsAndUnorderedAccessViews;
 
     public class DrawCall : IDeferred<DrawCall, DrawCall>, IOwned<Frame>
     {

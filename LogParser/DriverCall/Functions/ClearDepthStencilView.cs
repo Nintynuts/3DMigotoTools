@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class ClearDepthStencilView : ClearBase
+    public class ClearDepthStencilView : Clear
     {
         public ClearDepthStencilView(uint order) : base(order) { }
         public ulong pDepthStencilView { get; set; }

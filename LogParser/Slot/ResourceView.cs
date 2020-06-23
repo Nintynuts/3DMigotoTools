@@ -1,4 +1,4 @@
-﻿namespace Migoto.Log.Parser.Slot
+﻿namespace Migoto.Log.Parser.Slots
 {
     public class ResourceView : Resource
     {

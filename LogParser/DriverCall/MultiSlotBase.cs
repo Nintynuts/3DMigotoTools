@@ -1,46 +1,52 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public interface ISlotsUsage
+    using Slots;
+
+    public interface IMultiSlot
     {
         List<int> SlotsUsed { get; }
+
+        IEnumerable<IResourceSlot> AllSlots { get; }
     }
 
-    public abstract class SlotsBase<This, TSlotType, TDeferred> : Base, IMergable<This>, ISlotsUsage
-        where This : SlotsBase<This, TSlotType, TDeferred>
-        where TSlotType : Slot.Base
-        where TDeferred : class, IDeferred<TDeferred, DrawCall>
+    public abstract class MultiSlotBase<This, TSlot, TFallback> : ApiCall, IMergable<This>, IMultiSlot
+        where This : MultiSlotBase<This, TSlot, TFallback>
+        where TSlot : Slot
+        where TFallback : class, IDeferred<TFallback, DrawCall>
     {
         private readonly List<string> mergeWarnings = new List<string>();
 
         private List<int> slotsMask;
-        private List<TSlotType> allSlots;
+        private List<TSlot> allSlots;
 
-        protected SlotsBase(uint order) : base(order)
+        protected MultiSlotBase(uint order) : base(order)
         {
-            Slots = new SlotCollection<SlotsBase<This, TSlotType, TDeferred>, TSlotType>(this);
+            Slots = new SlotCollection<MultiSlotBase<This, TSlot, TFallback>, TSlot>(this);
         }
 
         public abstract List<int> SlotsUsed { get; }
 
-        protected abstract Deferred<TDeferred, DrawCall> Deferred { get; }
+        protected abstract Deferred<TFallback, DrawCall> Deferred { get; }
 
-        protected ICollection<TSlotType> Slots { get; }
+        protected ICollection<TSlot> Slots { get; }
         public uint StartSlot { get; set; }
         protected uint NumSlots { get; set; }
         protected ulong Pointer { get; set; }
         public List<ulong> PointersMerged { get; protected set; }
 
-        protected List<TSlotType> AllSlots => allSlots ??= SlotsUsed.OrderBy(i => i).Select(GetSlot).ToList();
+        protected List<TSlot> AllSlots => allSlots ??= SlotsUsed.OrderBy(i => i).Select(GetSlot).ToList();
 
-        private TSlotType GetSlot(int index)
+        IEnumerable<IResourceSlot> IMultiSlot.AllSlots => AllSlots.Cast<IResourceSlot>();
+
+        private TSlot GetSlot(int index)
             => SlotsMask.Contains(index) ? Slots.FirstOrDefault(s => s.Index == index) : GetPrevious(index);
 
-        private TSlotType GetPrevious(int index)
+        private TSlot GetPrevious(int index)
         {
-            TSlotType slot = Deferred?.Get<This>()?.GetSlot(index);
+            TSlot slot = Deferred?.Get<This>()?.GetSlot(index);
             slot?.SetLastUser(this);
             return slot;
         }

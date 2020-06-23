@@ -1,12 +1,17 @@
-﻿namespace Migoto.Log.Parser.Slot
+﻿
+namespace Migoto.Log.Parser.Slots
 {
-    public class Resource : Base, ISlotResource
+    using ApiCalls;
+
+    using Assets;
+
+    public class Resource : Slot, IResourceSlot
     {
         public ulong Pointer { get; set; }
 
-        public Asset.Base Asset { get; set; }
+        public Asset Asset { get; set; }
 
-        public void UpdateAsset(Asset.Base asset)
+        public void UpdateAsset(Asset asset)
         {
             Asset?.Unregister(this);
             Asset = asset;
@@ -14,7 +19,7 @@
                 Asset?.Register(this);
         }
 
-        public override void SetOwner(DriverCall.Base newOwner)
+        public override void SetOwner(ApiCall newOwner)
         {
             if (newOwner == null && Owner != null)
                 Asset?.Unregister(this);

@@ -1,18 +1,19 @@
-﻿
-namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    internal class SlotCollection<TSlotDriverCall, TSlotType> : OwnedCollection<Base, TSlotType>
-        where TSlotDriverCall : Base, ISlotsUsage
-        where TSlotType : Slot.Base
-    {
-        private readonly TSlotDriverCall owner;
+    using Slots;
 
-        public SlotCollection(TSlotDriverCall owner) : base(owner)
+    internal class SlotCollection<TSlotsApiCall, TSlot> : OwnedCollection<ApiCall, TSlot>
+        where TSlotsApiCall : ApiCall, IMultiSlot
+        where TSlot : Slot
+    {
+        private readonly TSlotsApiCall owner;
+
+        public SlotCollection(TSlotsApiCall owner) : base(owner)
         {
             this.owner = owner;
         }
 
-        public override void Add(TSlotType item)
+        public override void Add(TSlot item)
         {
             if (item == null)
                 return;

@@ -1,6 +1,8 @@
-﻿namespace Migoto.Log.Parser.Slot
+﻿namespace Migoto.Log.Parser.Slots
 {
-    public class Sampler : Base, IOwned<DriverCall.Base>
+    using ApiCalls;
+
+    public class Sampler : Slot, IOwned<ApiCall>
     {
         public ulong Handle { get; set; }
     }

@@ -1,20 +1,15 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public class SetConstantBuffers : ShaderSlots<SetConstantBuffers, Resource>, IResourceSlots
+    using Slots;
+    public class SetConstantBuffers : ShaderMultiSlot<SetConstantBuffers, Resource>
     {
         public SetConstantBuffers(uint order) : base(order) { }
 
         public uint NumBuffers { get => NumSlots; set => NumSlots = value; }
-
         public ulong ppConstantBuffers { get => Pointer; set => Pointer = value; }
 
         public ICollection<Resource> ConstantBuffers => Slots;
-
-        IEnumerable<ISlotResource> IResourceSlots.AllSlots => AllSlots.Cast<ISlotResource>();
     }
 }

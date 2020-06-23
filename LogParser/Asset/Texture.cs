@@ -1,13 +1,13 @@
 ﻿using System.Linq;
 
-using Migoto.Log.Parser.DriverCall;
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.Asset
+namespace Migoto.Log.Parser.Assets
 {
-    public class Texture : Base
+    using ApiCalls;
+    using Slots;
+
+    public class Texture : Asset
     {
-        public bool IsRenderTarget => Uses.OfType<ISlotResource>().Any(s => s.Owner is OMSetRenderTargets && s.Index >= 0);
-        public bool IsDepthStencil => Uses.OfType<ISlotResource>().Any(s => s.Owner is OMSetRenderTargets && s.Index == -1);
+        public bool IsRenderTarget => Uses.OfType<IResourceSlot>().Any(s => s.Owner is OMSetRenderTargets && s.Index >= 0);
+        public bool IsDepthStencil => Uses.OfType<IResourceSlot>().Any(s => s.Owner is OMSetRenderTargets && s.Index == -1);
     }
 }

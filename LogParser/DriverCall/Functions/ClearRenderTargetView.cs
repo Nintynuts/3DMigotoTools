@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class ClearRenderTargetView : ClearBase
+    public class ClearRenderTargetView : Clear
     {
         public ClearRenderTargetView(uint order) : base(order) { }
         public ulong pRenderTargetView { get; set; }

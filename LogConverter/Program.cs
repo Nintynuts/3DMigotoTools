@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 
-using Migoto.Log.Converter;
-
-namespace Migoto.Log.Parser
+namespace Migoto.Log.Converter
 {
+    using Parser;
+
     class Program
     {
         static void Main(string[] args)

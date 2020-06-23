@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
-using Migoto.Log.Parser.DriverCall;
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.Asset
+namespace Migoto.Log.Parser.Assets
 {
-    using static ShaderType;
+    using ApiCalls;
+    using Slots;
+    using static ApiCalls.ShaderType;
 
     public class Shader : IHash
     {
@@ -36,7 +36,7 @@ namespace Migoto.Log.Parser.Asset
         public ICollection<Texture> PartnerRTs => PartnerResource<Texture>(ctx => ctx.Owner.SetRenderTargets?.RenderTargets);
         public ICollection<Buffer> PartnerBuffers => PartnerResource<Buffer>(ctx => ctx.SetConstantBuffers?.ConstantBuffers);
 
-        private ICollection<T> PartnerResource<T>(System.Func<ShaderContext, IEnumerable<Resource>> selector)
+        private ICollection<T> PartnerResource<T>(Func<ShaderContext, IEnumerable<Resource>> selector)
             => References.SelectMany(r => selector(r.Shader(ShaderType))?.Select(rv => rv.Asset).OfType<T>() ?? Enumerable.Empty<T>()).Consolidate();
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
     public enum D3D_PRIMITIVE_TOPOLOGY
     {
@@ -98,7 +98,7 @@
         CONTROL_POINT_PATCHLIST_32_D3D11
     };
 
-    public class IASetPrimitiveTopology : Base, IInputAssembler
+    public class IASetPrimitiveTopology : ApiCall, IInputAssembler
     {
         public IASetPrimitiveTopology(uint order) : base(order) { }
 

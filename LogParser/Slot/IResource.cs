@@ -1,18 +1,22 @@
 ﻿
-namespace Migoto.Log.Parser.Slot
+
+namespace Migoto.Log.Parser.Slots
 {
+    using ApiCalls;
+    using Assets;
+
     public interface IResource
     {
-        Asset.Base Asset { get; }
+        Asset Asset { get; }
 
-        DriverCall.Base Owner { get; }
+        ApiCall Owner { get; }
 
         ulong Pointer { get; }
 
-        void UpdateAsset(Asset.Base asset);
+        void UpdateAsset(Asset asset);
     }
 
-    public interface ISlotResource : IResource, IOverriden<DriverCall.Base>
+    public interface IResourceSlot : IResource, IOverriden<ApiCall>
     {
         int Index { get; }
     }

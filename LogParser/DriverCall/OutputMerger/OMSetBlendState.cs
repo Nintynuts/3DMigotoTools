@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class OMSetBlendState : Base, IOutputMerger
+    public class OMSetBlendState : ApiCall, IOutputMerger
     {
         public OMSetBlendState(uint order) : base(order) { }
 

@@ -1,9 +1,8 @@
-﻿
-using Migoto.Log.Parser.Asset;
-
-namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class IASetIndexBuffer : SingleSlotBase, IInputAssembler
+    using Assets;
+
+    public class IASetIndexBuffer : SingleSlot, IInputAssembler
     {
         public IASetIndexBuffer(uint order) : base(order) { }
 

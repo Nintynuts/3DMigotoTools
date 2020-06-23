@@ -1,16 +1,14 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public class OMSetRenderTargets : Slots<OMSetRenderTargets, ResourceView>, IResourceSlots, IOutputMerger
+    using Slots;
+
+    public class OMSetRenderTargets : MultiSlot<OMSetRenderTargets, ResourceView>, IOutputMerger
     {
         public OMSetRenderTargets(uint order) : base(order) { }
 
         public uint NumViews { get => NumSlots; set => NumSlots = value; }
-
         public ulong ppRenderTargetViews { get => Pointer; set => Pointer = value; }
 
         public ICollection<ResourceView> RenderTargets => Slots;
@@ -31,7 +29,5 @@ namespace Migoto.Log.Parser.DriverCall
         public ulong pDepthStencilView { get; set; }
         public ResourceView D { get; set; }
         public ResourceView DepthStencil => D;
-
-        IEnumerable<ISlotResource> IResourceSlots.AllSlots => AllSlots.Cast<ISlotResource>();
     }
 }

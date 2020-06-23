@@ -4,22 +4,22 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-using Migoto.Log.Parser;
-using Migoto.Log.Parser.Asset;
-using Migoto.Log.Parser.DriverCall;
-using Migoto.Log.Parser.Slot;
 
 namespace Migoto.Log.Converter
 {
-    using Buffer = Parser.Asset.Buffer;
-    using Column = Column<DrawCall, object>;
-    using IColumns = IColumns<DrawCall>;
+    using Parser;
+    using Parser.ApiCalls;
+    using Parser.Assets;
+    using Parser.Slots;
+
+    using Column = Column<Parser.DrawCall, object>;
+    using IColumns = IColumns<Parser.DrawCall>;
 
     public static class LogWriter
     {
         private class AssetColumnSet : ColumnSet<DrawCall, IResource>
         {
-            public AssetColumnSet(string name, Func<DrawCall, IResourceSlots> provider, IEnumerable<int> columns)
+            public AssetColumnSet(string name, Func<DrawCall, IMultiSlot> provider, IEnumerable<int> columns)
                 : base(name, dc => provider(dc)?.AllSlots, GetValue, columns) { }
 
             public static string GetValue(DrawCall ctx, IResource item)

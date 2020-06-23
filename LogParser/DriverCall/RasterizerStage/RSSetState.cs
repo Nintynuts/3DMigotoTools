@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class RSSetState : Base
+    public class RSSetState : ApiCall
     {
         public RSSetState(uint order) : base(order) { }
 

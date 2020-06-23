@@ -1,14 +1,16 @@
-﻿namespace Migoto.Log.Parser.Slot
+﻿namespace Migoto.Log.Parser.Slots
 {
-    public abstract class Base : IOwned<DriverCall.Base>, IOverriden<DriverCall.Base>
+    using ApiCalls;
+
+    public abstract class Slot : IOwned<ApiCall>, IOverriden<ApiCall>
     {
         public int Index { get; set; } = -1;
 
-        public DriverCall.Base Owner { get; protected set; }
-        public DriverCall.Base LastUser { get; private set; }
+        public ApiCall Owner { get; protected set; }
+        public ApiCall LastUser { get; private set; }
 
-        public virtual void SetOwner(DriverCall.Base newOwner) => Owner = newOwner;
+        public virtual void SetOwner(ApiCall newOwner) => Owner = newOwner;
 
-        public void SetLastUser(DriverCall.Base lastUser) => LastUser = lastUser;
+        public void SetLastUser(ApiCall lastUser) => LastUser = lastUser;
     }
 }

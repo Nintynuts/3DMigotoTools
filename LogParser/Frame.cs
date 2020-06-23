@@ -10,7 +10,7 @@ namespace Migoto.Log.Parser
             DrawCalls = new OwnedCollection<Frame, DrawCall>(this);
         }
 
-        public object Index { get; }
+        public uint Index { get; }
         public ICollection<DrawCall> DrawCalls { get; }
     }
 }

@@ -1,20 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public class SetShaderResources : ShaderSlots<SetShaderResources, ResourceView>, IResourceSlots
+    using Slots;
+
+    public class SetShaderResources : ShaderMultiSlot<SetShaderResources, ResourceView>
     {
         public SetShaderResources(uint order) : base(order) { }
 
         public uint NumViews { get => NumSlots; set => NumSlots = value; }
-
         public ulong ppShaderResourceViews { get => Pointer; set => Pointer = value; }
 
         public ICollection<ResourceView> ResourceViews => Slots;
-
-        IEnumerable<ISlotResource> IResourceSlots.AllSlots => AllSlots.Cast<ISlotResource>();
     }
 }

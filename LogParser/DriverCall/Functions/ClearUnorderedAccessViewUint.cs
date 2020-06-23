@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall
+﻿namespace Migoto.Log.Parser.ApiCalls
 {
-    public class ClearUnorderedAccessViewUint : ClearBase
+    public class ClearUnorderedAccessViewUint : Clear
     {
         public ClearUnorderedAccessViewUint(uint order) : base(order) { }
         public ulong pUnorderedAccessView { get; set; }

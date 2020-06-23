@@ -1,4 +1,4 @@
-﻿namespace Migoto.Log.Parser.DriverCall.Draw
+﻿namespace Migoto.Log.Parser.ApiCalls.Draw
 {
     public interface IDraw
     {
@@ -10,12 +10,12 @@
         uint? InstanceCount { get; }
     }
 
-    public interface IDrawInstanced
+    public interface IDrawInstanced : IDraw
     {
         public uint StartInstanceLocation { get; set; }
     }
 
-    public interface IDrawIndexed
+    public interface IDrawIndexed : IDraw
     {
         public uint StartIndexLocation { get; set; }
         public uint BaseVertexLocation { get; set; }

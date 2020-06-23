@@ -1,6 +1,6 @@
-﻿namespace Migoto.Log.Parser.DriverCall.Draw
+﻿namespace Migoto.Log.Parser.ApiCalls.Draw
 {
-    public class Draw : Base, IDraw
+    public class Draw : ApiCall, IDraw
     {
         public Draw(uint order) : base(order) { }
 

@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 
-using Migoto.Log.Parser.Slot;
-
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
+    using Slots;
+
     using OMGetRTsAndUAVs = OMGetRenderTargetsAndUnorderedAccessViews;
 
-    public class OMGetRenderTargetsAndUnorderedAccessViews : Slots<OMGetRTsAndUAVs, ResourceView>, IOutputMerger
+    public class OMGetRenderTargetsAndUnorderedAccessViews : MultiSlot<OMGetRTsAndUAVs, ResourceView>, IOutputMerger
     {
         public OMGetRenderTargetsAndUnorderedAccessViews(uint order) : base(order) { }
         public uint NumRTVs { get; set; }

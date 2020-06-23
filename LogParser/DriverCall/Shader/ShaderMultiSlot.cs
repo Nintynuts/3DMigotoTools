@@ -1,19 +1,21 @@
 ﻿using System.Collections.Generic;
 
-namespace Migoto.Log.Parser.DriverCall
+namespace Migoto.Log.Parser.ApiCalls
 {
+    using Slots;
+
     public interface IShaderCall
     {
         ShaderType ShaderType { get; }
     }
 
-    public abstract class ShaderSlots<This, TSlotType> : SlotsBase<This, TSlotType, ShaderContext>, IShaderCall
-        where This : SlotsBase<This, TSlotType, ShaderContext>
-        where TSlotType : Slot.Base
+    public abstract class ShaderMultiSlot<This, TSlot> : MultiSlotBase<This, TSlot, ShaderContext>, IShaderCall
+        where This : MultiSlotBase<This, TSlot, ShaderContext>
+        where TSlot : Slot
     {
         public static Dictionary<ShaderType, List<int>> UsedSlots { get; } = new Dictionary<ShaderType, List<int>>();
 
-        protected ShaderSlots(uint order) : base(order) { }
+        protected ShaderMultiSlot(uint order) : base(order) { }
 
         public override List<int> SlotsUsed => UsedSlots.GetOrAdd(ShaderType);
 
