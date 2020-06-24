@@ -24,16 +24,19 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
       
+    - name: Move to build dir
+      run: cd LogConverter/bin/Release/netcoreapp3.1/
+      
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
         name: Log-Converter-release
-        path: 'LogConverter/bin/Release/netcoreapp3.1/LogConverter.exe'
+        path: 'LogConverter'
     - uses: actions/upload-artifact@v2
       with:
         name: Log-Converter-release
-        path: 'LogConverter/bin/Release/netcoreapp3.1/LogConverter.dll'
+        path: '*.dll'
     - uses: actions/upload-artifact@v2
       with:
         name: Log-Converter-release
-        path: 'LogConverter/bin/Release/netcoreapp3.1/LogConverter.runtimeconfig.json'
+        path: 'LogConverter.runtimeconfig.json'
