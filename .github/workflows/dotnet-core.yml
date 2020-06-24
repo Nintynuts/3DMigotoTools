@@ -23,14 +23,20 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Test
       run: dotnet test --no-restore --verbosity normal
-      
+    
+    - name: DotNet Bump Versions
+      uses: SiqiLu/dotnet-bump-version@1.0.1
+      with:
+        # the github token to push changes
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    
     - name: Zip Release
       uses: TheDoctor0/zip-release@v0.3.0
       with:
         # Filename for archive
         filename: Log-Converter-release.zip
-        # Base path for archive files
-        path: LogConverter/bin/Release/netcoreapp3.1/
+        # Working directory before zipping
+        directory: LogConverter/bin/Release/netcoreapp3.1/
         # List of excluded files/directories
         exclusions: '*.pdb *.dev.json *.deps.json'
       
@@ -40,4 +46,4 @@ jobs:
         # Artifact name
         name: Log-Converter
         # A file, directory or wildcard pattern that describes what to upload
-        path: ./Log-Converter-release.zip
+        path: LogConverter/bin/Release/netcoreapp3.1/Log-Converter-release.zip
