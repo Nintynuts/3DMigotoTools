@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Migoto.Log.Converter</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>Nintynuts</Authors>
   </PropertyGroup>
 
   <ItemGroup>
