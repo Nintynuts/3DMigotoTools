@@ -22,6 +22,7 @@ namespace Migoto.Log.Parser
         private readonly Regex methodArgPattern = new Regex(@"(?'name'\w+):(?'value'\w+)");
         private readonly Regex resourcePattern = new Regex(@"\s+(?'index'\w+)?: (?:view=(?'view'\w+) )?resource=(?'resource'\w+)(?: hash=(?'hash'\w+))?");
         private readonly Regex samplerPattern = new Regex(@"\s+(?'index'\w+): handle=(?'handle'\w+)");
+        private readonly Regex dataPattern = new Regex(@"\s+data: \w+");
         private readonly Regex logicPattern = new Regex(@"3DMigoto (?'logic'.*)");
 
         private readonly Dictionary<string, Type> apiCallTypes = typeof(ApiCall).Assembly.GetTypes().Where(t => typeof(ApiCall).IsAssignableFrom(t) && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
@@ -114,6 +115,8 @@ namespace Migoto.Log.Parser
                 ProcessSamplerSlot(samplerMatch.Groups);
                 return;
             }
+            if (dataPattern.Match(line).Success)
+                return; // We don't handle this
             var logicMatch = logicPattern.Match(line);
             if (logicMatch.Success)
             {
