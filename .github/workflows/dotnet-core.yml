@@ -28,12 +28,12 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Log-Converter-release
-        path: LogConverter/bin/Release/netcoreapp3.1/*.exe
+        path: 'LogConverter/bin/Release/netcoreapp3.1/LogConverter.exe'
     - uses: actions/upload-artifact@v2
       with:
         name: Log-Converter-release
-        path: LogConverter/bin/Release/netcoreapp3.1/*.dll'
+        path: 'LogConverter/bin/Release/netcoreapp3.1/LogConverter.dll'
     - uses: actions/upload-artifact@v2
       with:
         name: Log-Converter-release
-        path: LogConverter/bin/Release/netcoreapp3.1/*.runtimeconfig.json  
+        path: 'LogConverter/bin/Release/netcoreapp3.1/LogConverter.runtimeconfig.json'
