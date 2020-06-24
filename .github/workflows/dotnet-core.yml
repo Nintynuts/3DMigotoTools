@@ -27,7 +27,13 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
-        # Artifact name
         name: Log-Converter-release
-        # A file, directory or wildcard pattern that describes what to upload
-        path: 'LogConverter/bin/Release/netcoreapp3.1/* !*.pdb !*.dev.json !*.deps.json'
+        path: LogConverter/bin/Release/netcoreapp3.1/*.exe
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Log-Converter-release
+        path: LogConverter/bin/Release/netcoreapp3.1/*.dll'
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Log-Converter-release
+        path: LogConverter/bin/Release/netcoreapp3.1/*.runtimeconfig.json  
