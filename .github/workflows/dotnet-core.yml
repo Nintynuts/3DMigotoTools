@@ -30,7 +30,7 @@ jobs:
         # Filename for archive
         filename: Log-Converter-release.zip
         # Working directory before zipping
-        directory: LogConverter/bin/Release/
+        directory: LogConverter/bin/Release/netcoreapp3.1/
         # List of excluded files/directories
         exclusions: '*.pdb *.dev'
       
