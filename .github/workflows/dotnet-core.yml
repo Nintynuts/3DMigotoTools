@@ -29,10 +29,10 @@ jobs:
       with:
         # Filename for archive
         filename: Log-Converter-release.zip
-        # Working directory before zipping
-        directory: LogConverter/bin/Release/netcoreapp3.1/
+        # Base path for archive files
+        path: LogConverter/bin/Release/netcoreapp3.1/
         # List of excluded files/directories
-        exclusions: '*.pdb *.dev'
+        exclusions: '*.pdb *.dev.json *.deps.json'
       
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
