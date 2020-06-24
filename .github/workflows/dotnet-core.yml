@@ -25,7 +25,7 @@ jobs:
       run: dotnet test --no-restore --verbosity normal
       
     - name: Move to build dir
-      run: cd LogConverter/bin/Release/netcoreapp3.1/
+      run: cd LogConverter/bin/Release/netcoreapp3.1
       
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
