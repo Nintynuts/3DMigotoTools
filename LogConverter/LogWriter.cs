@@ -20,7 +20,7 @@ namespace Migoto.Log.Converter
         private class AssetColumnSet : ColumnSet<DrawCall, IResource>
         {
             public AssetColumnSet(string name, Func<DrawCall, IMultiSlot> provider, IEnumerable<int> columns)
-                : base(name, dc => provider(dc)?.AllSlots, GetValue, columns) { }
+                : base(name, dc => provider(dc)?.Slots, GetValue, columns) { }
 
             public static string GetValue(DrawCall ctx, IResource item)
             {

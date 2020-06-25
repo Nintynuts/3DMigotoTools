@@ -42,12 +42,11 @@ namespace Migoto.Log.Parser
         {
             if (Overrides.TryGetValue(name, out var result))
                 return (TProperty)result;
-            else if (FallbackValues.TryGetValue(name, out result))
-            {
-                SetLastUser(result);
-                return (TProperty)result;
-            }
-            else if (useFallback && Fallback != null)
+
+            if (!useFallback || Fallback == null)
+                return null;
+
+            if (!FallbackValues.TryGetValue(name, out result))
             {
                 // This way avoids stack overflow
                 var deferred = Fallback.Deferred;
@@ -58,13 +57,11 @@ namespace Migoto.Log.Parser
                     deferred = deferred.Fallback.Deferred;
                 }
 
-                SetLastUser(result);
                 FallbackValues[name] = result;
-
-                return (TProperty)result;
             }
-            else
-                return null;
+
+            SetLastUser(result);
+            return (TProperty)result;
         }
 
         private void SetLastUser(IOwned<TOwner> result)

@@ -9,7 +9,7 @@ namespace Migoto.Log.Parser.ApiCalls
     {
         List<int> GlobalSlotsMask { get; }
 
-        IEnumerable<IResourceSlot> AllSlots { get; }
+        IEnumerable<IResourceSlot> Slots { get; }
     }
 
     public abstract class MultiSlotBase<This, TSlot, TFallback> : ApiCall, IMergable<This>, IMultiSlot
@@ -27,32 +27,34 @@ namespace Migoto.Log.Parser.ApiCalls
             SlotsPopulated = new SlotCollection<MultiSlotBase<This, TSlot, TFallback>, TSlot>(this);
         }
 
-        public abstract List<int> GlobalSlotsMask { get; }
-
-        protected abstract Deferred<TFallback, DrawCall> PreviousDeferred { get; }
-
-        protected ICollection<TSlot> SlotsPopulated { get; }
         public uint StartSlot { get; set; }
         protected uint NumSlots { get; set; }
         protected ulong Pointer { get; set; }
         public List<ulong> PointersMerged { get; protected set; }
 
-        protected List<TSlot> SlotsSet => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ToList();
+        protected ICollection<TSlot> SlotsPopulated { get; }
 
-        IEnumerable<IResourceSlot> IMultiSlot.AllSlots => SlotsSet.Cast<IResourceSlot>();
+        private List<int> SlotsMask
+            => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).ToList();
+
+        private List<TSlot> SlotsSet
+            => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ToList();
+
+        public abstract List<int> GlobalSlotsMask { get; }
+
+        protected abstract Deferred<TFallback, DrawCall> PreviousDeferred { get; }
+
+        IEnumerable<IResourceSlot> IMultiSlot.Slots => SlotsSet.Cast<IResourceSlot>();
 
         private TSlot GetSlot(int index)
             => SlotsMask.Contains(index) ? SlotsPopulated.FirstOrDefault(s => s.Index == index) : GetPrevious(index);
 
         private TSlot GetPrevious(int index)
         {
-            TSlot slot = PreviousDeferred?.OfType<This>().FirstOrDefault()?.SlotsSet.Find(s => s?.Index == index);
+            var slot = PreviousDeferred?.OfType<This>().FirstOrDefault()?.SlotsSet.Find(s => s?.Index == index);
             slot?.SetLastUser(this);
             return slot;
         }
-
-        private List<int> SlotsMask
-            => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).ToList();
 
         public IEnumerable<string> MergeWarnings => mergeWarnings;
 

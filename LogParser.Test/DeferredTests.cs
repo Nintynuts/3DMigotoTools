@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -35,16 +36,52 @@ namespace Migoto.Log.Parser.Test
             Assert.AreEqual(firstOwnedThing, second.AnotherProp, "Second's thing can't be retrieved");
 
             Assert.AreEqual(second, firstOwnedThing.Owner, "Owner of thing wasn't updated to second");
+
+            first.NotInterited = new MergableThing();
+            first.NotInterited = new MergableThing();
+
+            Assert.IsTrue(first.NotInterited.Merged, "First's merge prop not marked as merged");
+        }
+
+        [TestMethod]
+        public void TestDeferredMultiLayer()
+        {
+            var first = new TestThing();
+            var second = new TestThing(first);
+            var third = new TestThing(second);
+
+            var firstOwnedThing = new OwnedThing();
+            first.TestProp = firstOwnedThing;
+
+            Assert.AreEqual(firstOwnedThing, third.TestProp, "Third's thing can't be retrieved");
+
+            Assert.AreEqual(third, first.TestProp.LastUser, "Third not registered as last user");
+
+            first.NotInterited = new MergableThing();
+
+            Assert.IsNull(third.NotInterited, "Third should not inherit First's AnotherProp value");
         }
     }
 
-    internal class OwnedThing : IOwned<TestThing>
+    internal class OwnedThing : IOwned<TestThing>, IOverriden<TestThing>
     {
         public TestThing Owner { get; private set; }
+
+        public TestThing LastUser { get; private set; }
+
+        public void SetLastUser(TestThing lastUser) => LastUser = lastUser;
 
         public void SetOwner(TestThing newOwner) { Owner = newOwner; }
     }
 
+    internal class MergableThing : OwnedThing, IMergable<MergableThing>
+    {
+        public IEnumerable<string> MergeWarnings { get; } = new List<string>();
+
+        public bool Merged { get; set; }
+
+        public void Merge(MergableThing value) => Merged = true;
+    }
 
     internal class TestThing : IDeferred<TestThing, TestThing>
     {
@@ -58,5 +95,7 @@ namespace Migoto.Log.Parser.Test
         public OwnedThing TestProp { get => Deferred.Get<OwnedThing>(); set => Deferred.Set(value); }
 
         public OwnedThing AnotherProp { get => Deferred.Get<OwnedThing>(); set => Deferred.Set(value); }
+
+        public MergableThing NotInterited { get => Deferred.Get<MergableThing>(false); set => Deferred.Set(value); }
     }
 }

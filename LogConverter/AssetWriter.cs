@@ -39,7 +39,7 @@ namespace Migoto.Log.Converter
             => dc is IMultiSlot multiSlot ? (object)GetResource(asset, multiSlot).Index : GetResourceName(asset, dc);
 
         private static IResourceSlot GetResource(Asset asset, IMultiSlot multiSlot)
-            => multiSlot.AllSlots.FirstOrDefault(s => s?.Asset == asset);
+            => multiSlot.Slots.FirstOrDefault(s => s?.Asset == asset);
 
         private static string GetResourceName(Asset asset, ApiCall dc)
             => dc.GetType().GetProperties().OfType<Resource>().FirstOrDefault(p => dc.Get<Resource>(p).Asset == asset)?.Name;
