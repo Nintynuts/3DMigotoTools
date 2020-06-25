@@ -17,16 +17,12 @@ namespace Migoto.Log.Parser.ApiCalls
 
         protected ShaderMultiSlot(uint order) : base(order) { }
 
-        public override List<int> SlotsUsed => UsedSlots.GetOrAdd(ShaderType);
+        public override List<int> GlobalSlotsMask => UsedSlots.GetOrAdd(ShaderType);
 
-        protected override Deferred<ShaderContext, DrawCall> Deferred => Previous?.Deferred;
+        protected override Deferred<ShaderContext, DrawCall> PreviousDeferred => Owner.Previous?.Shader(ShaderType).Deferred;
 
         public override string Name => $"{ShaderType.ToString()[0]}S{base.Name}";
 
         public ShaderType ShaderType { get; set; }
-
-        private ShaderContext previous;
-
-        private ShaderContext Previous => previous ??= Owner.Previous?.Shader(ShaderType);
     }
 }

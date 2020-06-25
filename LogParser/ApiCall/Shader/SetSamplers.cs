@@ -11,6 +11,6 @@ namespace Migoto.Log.Parser.ApiCalls
         public uint NumSamplers { get => NumSlots; set => NumSlots = value; }
         public ulong ppSamplers { get => Pointer; set => Pointer = value; }
 
-        public ICollection<Sampler> Samplers => Slots;
+        public ICollection<Sampler> Samplers => SlotsPopulated;
     }
 }

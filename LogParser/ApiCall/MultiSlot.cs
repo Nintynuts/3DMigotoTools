@@ -12,8 +12,8 @@ namespace Migoto.Log.Parser.ApiCalls
 
         protected MultiSlot(uint order) : base(order) { }
 
-        public override List<int> SlotsUsed => UsedSlots;
+        public override List<int> GlobalSlotsMask => UsedSlots;
 
-        protected override Deferred<DrawCall, DrawCall> Deferred => Owner.Deferred;
+        protected override Deferred<DrawCall, DrawCall> PreviousDeferred => Owner.Previous.Deferred;
     }
 }

@@ -12,6 +12,6 @@ namespace Migoto.Log.Parser.ApiCalls
         public uint NumViews { get => NumSlots; set => NumSlots = value; }
         public ulong ppShaderResourceViews { get => Pointer; set => Pointer = value; }
 
-        public ICollection<ResourceView> ResourceViews => Slots;
+        public ICollection<ResourceView> ResourceViews => SlotsPopulated;
     }
 }

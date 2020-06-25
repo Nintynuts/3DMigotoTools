@@ -58,10 +58,12 @@ namespace Migoto.Log.Parser
             frame.DrawCalls.Add(drawCall);
         }
 
-        public List<Frame> Parse()
+        public bool Parse()
         {
-            // analysis_options
-            stream.ReadLine();
+            var header = stream.ReadLine();
+            if (!header.StartsWith("analyse_options"))
+                return false;
+
             var line = 2;
 
             while (!stream.EndOfStream)
@@ -88,7 +90,7 @@ namespace Migoto.Log.Parser
 
             SimplifyLogic();
 
-            return Frames;
+            return true;
         }
 
         private void ParseLine(string line)

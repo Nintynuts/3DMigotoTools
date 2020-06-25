@@ -13,6 +13,6 @@ namespace Migoto.Log.Parser.ApiCalls
         public ulong pStrides { get; set; }
         public ulong pOffsets { get; set; }
 
-        public ICollection<Resource> VertexBuffers => Slots;
+        public ICollection<Resource> VertexBuffers => SlotsPopulated;
     }
 }

@@ -11,7 +11,7 @@ namespace Migoto.Log.Parser.ApiCalls
         public uint NumViews { get => NumSlots; set => NumSlots = value; }
         public ulong ppRenderTargetViews { get => Pointer; set => Pointer = value; }
 
-        public ICollection<ResourceView> RenderTargets => Slots;
+        public ICollection<ResourceView> RenderTargets => SlotsPopulated;
 
         public override void Merge(OMSetRenderTargets value)
         {

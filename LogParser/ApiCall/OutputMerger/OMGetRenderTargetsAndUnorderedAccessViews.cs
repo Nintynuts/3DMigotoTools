@@ -15,6 +15,6 @@ namespace Migoto.Log.Parser.ApiCalls
         public uint UAVStartSlot { get => StartSlot; set => StartSlot = value; }
         public uint NumUAVs { get => NumSlots; set => NumSlots = value; }
         public ulong ppUnorderedAccessViews { get => Pointer; set => Pointer = value; }
-        public ICollection<ResourceView> Outputs => Slots;
+        public ICollection<ResourceView> Outputs => SlotsPopulated;
     }
 }

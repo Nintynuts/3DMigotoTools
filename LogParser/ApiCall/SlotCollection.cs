@@ -18,8 +18,8 @@
             if (item == null)
                 return;
             base.Add(item);
-            if (!owner.SlotsUsed.Contains(item.Index))
-                owner.SlotsUsed.Add(item.Index);
+            if (!owner.GlobalSlotsMask.Contains(item.Index))
+                owner.GlobalSlotsMask.Add(item.Index);
         }
     }
 }

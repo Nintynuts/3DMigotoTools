@@ -9,21 +9,38 @@ namespace Migoto.Log.Converter
     {
         static void Main(string[] args)
         {
-            var file = new StreamReader(args[0]);
+            string inputFilePath = "";
+            if (args?.Length > 0)
+                inputFilePath = args[0];
 
-            var parser = new Parser(file, msg => Console.WriteLine(msg));
+            while (inputFilePath == "" || !File.Exists(inputFilePath))
+            {
+                if (inputFilePath != "")
+                    Console.WriteLine("File doesn't exist, please try again...");
 
-            var frames = parser.Parse();
+                Console.Write("Please enter input file path (log.txt): ");
+                inputFilePath = Console.ReadLine();
+            }
 
-            var fileName = args[0].Replace(".txt", ".csv");
+            var inputLog = new StreamReader(inputFilePath);
 
-            var output = TryOpenFile(fileName);
+            var parser = new Parser(inputLog, msg => Console.WriteLine(msg));
 
-            LogWriter.Write(frames, output);
+            if (!parser.Parse())
+            {
+                Console.WriteLine("Provided file is not a 3DMigoto FrameAnalysis log file");
+                return;
+            }
+
+            var outputFilePath = inputFilePath.Replace(".txt", ".csv");
+
+            var outputCsv = TryOpenFile(outputFilePath);
+
+            LogWriter.Write(parser.Frames, outputCsv);
 
             Console.WriteLine("Press Escape to exit");
 
-            var folder = Path.GetDirectoryName(args[0]);
+            var folder = Path.GetDirectoryName(inputFilePath);
             do
             {
                 Console.Write("Enter a resource hash to dump lifecycle for: ");
