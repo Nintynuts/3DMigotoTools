@@ -4,14 +4,15 @@
     {
         public Deferred<ShaderContext, DrawCall> Deferred { get; }
 
-        public ShaderContext(ShaderType shaderType, DrawCall owner, DrawCall previous)
+        public ShaderContext(DrawCall owner, ShaderContext fallback)
         {
-            ShaderType = shaderType;
             Owner = owner;
-            Deferred = new Deferred<ShaderContext, DrawCall>(owner, previous?.Shader(shaderType));
+            Fallback = fallback;
+            Deferred = new Deferred<ShaderContext, DrawCall>(owner, fallback);
         }
 
-        public ShaderType ShaderType { get; }
+        public ShaderContext Fallback { get; }
+
         public DrawCall Owner { get; }
         public SetShader SetShader { get => Deferred.Get<SetShader>(); set => Deferred.Set(value); }
 

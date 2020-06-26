@@ -25,7 +25,7 @@ namespace Migoto.Log.Parser
         private readonly Regex dataPattern = new Regex(@"\s+data: \w+");
         private readonly Regex logicPattern = new Regex(@"3DMigoto (?'logic'.*)");
 
-        private readonly Dictionary<string, Type> apiCallTypes = typeof(ApiCall).Assembly.GetTypes().Where(t => typeof(ApiCall).IsAssignableFrom(t) && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
+        private readonly Dictionary<string, Type> apiCallTypes = typeof(IApiCall).Assembly.GetTypes().Where(t => t.Is<IApiCall>() && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
         private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.IsGeneric(typeof(ICollection<>)) || p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
         private readonly MethodInfo shader = typeof(DrawCall).GetMethod(nameof(DrawCall.Shader));
         private readonly Dictionary<Type, PropertyInfo> shaderContextProps = typeof(ShaderContext).GetProperties().Where(p => p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
@@ -48,7 +48,7 @@ namespace Migoto.Log.Parser
         private uint drawCallNo = 0;
         private uint apiCallNo = 0;
         private DrawCall drawCall = new DrawCall(0, null);
-        private ApiCall apiCall = null;
+        private IApiCall apiCall = null;
 
         public Parser(StreamReader stream, Action<string> logger)
         {
@@ -184,7 +184,7 @@ namespace Migoto.Log.Parser
                 return;
             }
             ShaderTypes.TryGetValue(methodName[0], out ShaderType? shaderType);
-            apiCall = apiCallType.Construct<ApiCall>(apiCallNo);
+            apiCall = apiCallType.Construct<IApiCall>(apiCallNo);
             apiCallNo++;
 
             var argsMatches = methodArgPattern.Match(captures["args"].Value);
@@ -226,19 +226,19 @@ namespace Migoto.Log.Parser
                     singleSlot.UpdateAsset(asset);
                 }
             }
-            if (typeof(IDraw).IsAssignableFrom(apiCallType))
+            if (apiCallType.Is<IDraw>())
                 apiCallType = typeof(IDraw);
             if (shaderType.HasValue && shaderContextProps.TryGetValue(apiCallType, out var property))
             {
                 var shaderCtx = drawCall.Shader(shaderType.Value);
                 apiCall.GetType().GetProperty(nameof(ShaderType))?.SetValue(apiCall, shaderType.Value);
-                shaderCtx.Set(property, apiCall);
-                apiCall = shaderCtx.Get<ApiCall>(property);
+                property.SetTo(shaderCtx, apiCall);
+                apiCall = property.GetFrom<IApiCall>(shaderCtx);
             }
             else if (drawCallProps.TryGetValue(apiCallType, out property))
             {
-                drawCall.Set(property, apiCall);
-                apiCall = drawCall.Get<ApiCall>(property);
+                property.SetTo(drawCall, apiCall);
+                apiCall = property.GetFrom<IApiCall>(drawCall);
             }
             else if (drawCallProps.TryGetValue(typeof(ICollection<>).MakeGenericType(apiCallType), out var listProperty))
             {
@@ -252,29 +252,51 @@ namespace Migoto.Log.Parser
 
         private void ProcessResourceSlot(GroupCollection captures)
         {
-            string index = captures["index"].Value;
-            var useList = uint.TryParse(index, out var _);
+            if (apiCall is IResource resource)
+            {
+                PopulateResourceSlot(captures, resource);
+                return;
+            }
 
+            Type apiCallType = apiCall.GetType();
             PropertyInfo slots;
             Type slotType;
 
+            string index = captures["index"].Value;
+            var useList = apiCall is IMultiSlot && uint.TryParse(index, out var _);
+
             if (useList)
             {
-                slots = apiCall.SlotsProperty;
+                slots = apiCallType.GetProperties().FirstOrDefault(p => p.IsGeneric(typeof(ICollection<>)) && p.FirstType().Is<IResourceSlot>());
                 if (slots == null)
-                    throw new InvalidOperationException($"{apiCall.GetType().Name} doesn't have a slots property.");
-                slotType = slots.PropertyType.GetGenericArguments()[0];
+                    throw new InvalidOperationException($"{apiCall.Name} doesn't have a slots property.");
+                slotType = slots.FirstType();
             }
             else
             {
-                slots = apiCall.GetType().GetProperty(index);
-                slots ??= apiCall.GetType().GetProperties().SingleOrDefault(p => typeof(Slot).IsAssignableFrom(p.PropertyType));
-                if (slots == null)
-                    throw new InvalidOperationException($"{apiCall.GetType().Name} doesn't have a slot property called {index}.");
+                slots = apiCallType.GetProperty(index) ?? apiCallType.GetProperties().OfType<IResource>().SingleOrDefault();
+                if (slots == null || slots.PropertyType.IsInterface)
+                    throw new InvalidOperationException($"{apiCall.Name} doesn't have a concrete slot property called {index}.");
                 slotType = slots.PropertyType;
             }
-            var slot = slotType.Construct<Resource>();
 
+            var slot = slotType.Construct<Resource>();
+            PopulateResourceSlot(captures, slot);
+
+            if (useList)
+            {
+                slot.SetFromString(nameof(Resource.Index), captures["index"].Value);
+                apiCall.Add(slots, slot);
+            }
+            else
+            {
+                slot.SetOwner(apiCall);
+                slots.SetTo(apiCall, slot);
+            }
+        }
+
+        private void PopulateResourceSlot(GroupCollection captures, IResource slot)
+        {
             var view = captures["view"];
             if (view.Success)
                 slot.SetFromString(nameof(ResourceView.View), view.Value);
@@ -288,27 +310,11 @@ namespace Migoto.Log.Parser
                 if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
                 {
                     var unknown = asset as Unknown;
-
-                    if (slotType == typeof(ResourceView))
-                        asset = new Texture();
-                    else
-                        asset = new Buffer();
-
+                    asset = slot is ResourceView ? new Texture() : (Asset)new Buffer();
                     RegisterAsset(hash, asset, unknown);
                 }
 
                 slot.UpdateAsset(asset);
-            }
-
-            if (useList)
-            {
-                slot.SetFromString(nameof(Resource.Index), captures["index"].Value);
-                apiCall.Add(slots, slot);
-            }
-            else
-            {
-                slot.SetOwner(apiCall);
-                apiCall.Set(slots, slot);
             }
         }
 

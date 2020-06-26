@@ -88,7 +88,10 @@ namespace Migoto.Log.Parser.Test
         public TestThing(TestThing fallback = null)
         {
             Deferred = new Deferred<TestThing, TestThing>(this, fallback);
+            Fallback = fallback;
         }
+
+        public TestThing Fallback { get; }
 
         public Deferred<TestThing, TestThing> Deferred { get; }
 

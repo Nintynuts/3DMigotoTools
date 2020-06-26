@@ -26,7 +26,7 @@ namespace Migoto.Log.Converter
             {
                 return item == null ? string.Empty
                     : item.Asset == null ? "No Hash"
-                    : item.Asset.Hex + (GetModifier(ctx, item).Any(m => m.Target?.Asset == item.Asset) ? "*" : string.Empty);
+                    : item.Asset.Hex + (GetModifier(ctx, item).Any(m => m.Slot?.Asset == item.Asset) ? "*" : string.Empty);
             }
 
             public static IEnumerable<ISingleSlot> GetModifier(DrawCall ctx, IResource item)

@@ -4,10 +4,14 @@ using System.Reflection;
 
 namespace Migoto.Log.Parser.ApiCalls
 {
-    using Assets;
     using Slots;
 
-    public abstract class ApiCall : IOwned<DrawCall>, IOverriden<DrawCall>
+    public interface IApiCall : IOwned<DrawCall>, IOverriden<DrawCall>, INamed
+    {
+        uint Order { get; }
+    }
+
+    public abstract class ApiCall : IApiCall
     {
         public uint Order { get; }
         public DrawCall Owner { get; private set; }
@@ -22,13 +26,5 @@ namespace Migoto.Log.Parser.ApiCalls
         {
             Order = order;
         }
-
-        public PropertyInfo SlotsProperty
-            => GetType().GetProperties().FirstOrDefault(p => p.PropertyType.IsGenericType
-               && p.PropertyType.GetGenericTypeDefinition() == typeof(ICollection<>)
-               && typeof(Slot).IsAssignableFrom(p.PropertyType.GetGenericArguments()[0]));
-
-        public PropertyInfo AssetProperty
-            => GetType().GetProperties().FirstOrDefault(p => p.CanWrite && typeof(Asset).IsAssignableFrom(p.PropertyType));
     }
 }

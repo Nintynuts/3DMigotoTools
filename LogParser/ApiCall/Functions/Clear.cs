@@ -8,6 +8,6 @@
 
         public ResourceView Target { get; set; }
 
-        IResource ISingleSlot.Target => Target;
+        IResource ISingleSlot.Slot => Target;
     }
 }

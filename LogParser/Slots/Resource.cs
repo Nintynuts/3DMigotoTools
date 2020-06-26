@@ -2,10 +2,9 @@
 namespace Migoto.Log.Parser.Slots
 {
     using ApiCalls;
-
     using Assets;
 
-    public class Resource : Slot, IResourceSlot
+    public class Resource : Slot<IApiCall>, IResourceSlot
     {
         public ulong Pointer { get; set; }
 
@@ -19,7 +18,7 @@ namespace Migoto.Log.Parser.Slots
                 Asset?.Register(this);
         }
 
-        public override void SetOwner(ApiCall newOwner)
+        public override void SetOwner(IApiCall newOwner)
         {
             if (newOwner == null && Owner != null)
                 Asset?.Unregister(this);

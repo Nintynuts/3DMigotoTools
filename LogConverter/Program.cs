@@ -19,7 +19,7 @@ namespace Migoto.Log.Converter
                     Console.WriteLine("File doesn't exist, please try again...");
 
                 Console.Write("Please enter input file path (log.txt): ");
-                inputFilePath = Console.ReadLine();
+                inputFilePath = Console.ReadLine().Replace("\"","");
             }
 
             var inputLog = new StreamReader(inputFilePath);

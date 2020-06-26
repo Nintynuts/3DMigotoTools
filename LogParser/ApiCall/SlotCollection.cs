@@ -2,13 +2,14 @@
 {
     using Slots;
 
-    internal class SlotCollection<TSlotsApiCall, TSlot> : OwnedCollection<ApiCall, TSlot>
-        where TSlotsApiCall : ApiCall, IMultiSlot
-        where TSlot : Slot
+    internal class SlotCollection<TOwner, TSlot, TSlotOwner> : OwnedCollection<TSlotOwner, TSlot>
+        where TOwner : class, IMultiSlot, TSlotOwner
+        where TSlot : ISlot<TSlotOwner>, IOwned<TSlotOwner>
+        where TSlotOwner : class
     {
-        private readonly TSlotsApiCall owner;
+        private readonly TOwner owner;
 
-        public SlotCollection(TSlotsApiCall owner) : base(owner)
+        public SlotCollection(TOwner owner) : base(owner)
         {
             this.owner = owner;
         }

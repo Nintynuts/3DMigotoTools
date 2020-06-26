@@ -10,6 +10,8 @@ namespace Migoto.Log.Parser
         where TOwner : class
     {
         Deferred<TFallback, TOwner> Deferred { get; }
+
+        TFallback Fallback { get; }
     }
 
     public class Deferred<TFallback, TOwner>

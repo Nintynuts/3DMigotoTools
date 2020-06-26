@@ -6,21 +6,21 @@ namespace Migoto.Log.Parser.ApiCalls
 
     public interface ISingleSlot
     {
-        IResource Target { get; }
+        IResource Slot { get; }
     }
 
-    public abstract class SingleSlot : ApiCall, IResource, ISingleSlot
+    public abstract class SingleSlot : ApiCall, ISingleSlot, IResource
     {
         protected SingleSlot(uint order) : base(order) { }
 
         public Asset Asset { get; protected set; }
 
-        ApiCall IResource.Owner => this;
+        IApiCall IResource.Owner => this;
 
         ulong IResource.Pointer => Pointer;
         protected ulong Pointer { get; set; }
 
-        IResource ISingleSlot.Target => this;
+        IResource ISingleSlot.Slot => this;
 
         public void UpdateAsset(Asset asset)
         {

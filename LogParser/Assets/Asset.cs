@@ -31,7 +31,7 @@ namespace Migoto.Log.Parser.Assets
         public List<(int index, List<IResourceSlot> slots)> Slots
             => Uses.OfType<IResourceSlot>().GroupBy(s => s.Index).OrderBy(g => g.Key).Select(g => (index: g.Key, slots: g.ToList())).ToList();
 
-        public List<ApiCall> LifeCycle
+        public List<IApiCall> LifeCycle
             => Uses.Select(s => s.Owner).OrderBy(dc => dc.Owner.Owner.Index).ThenBy(dc => dc.Owner.Index).ThenBy(dc => dc.Order).ToList();
     }
 }

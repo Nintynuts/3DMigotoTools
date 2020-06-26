@@ -9,20 +9,22 @@ namespace Migoto.Log.Parser.ApiCalls
         ShaderType ShaderType { get; }
     }
 
-    public abstract class ShaderMultiSlot<This, TSlot> : MultiSlotBase<This, TSlot, ShaderContext>, IShaderCall
-        where This : MultiSlotBase<This, TSlot, ShaderContext>
-        where TSlot : Slot
+    public abstract class ShaderMultiSlot<This, TSlot> : MultiSlotBase<This, TSlot, IApiCall, DrawCall, ShaderContext>, IApiCall, IShaderCall
+        where This : MultiSlotBase<This, TSlot, IApiCall, DrawCall, ShaderContext>, IApiCall
+        where TSlot : class, ISlot<IApiCall>, IOwned<IApiCall>
     {
         public static Dictionary<ShaderType, List<int>> UsedSlots { get; } = new Dictionary<ShaderType, List<int>>();
 
-        protected ShaderMultiSlot(uint order) : base(order) { }
+        protected ShaderMultiSlot(uint order) => Order = order;
+
+        public uint Order { get; }
+
+        public ShaderType ShaderType { get; set; }
+
+        string INamed.Name => $"{ShaderType.ToString()[0]}S{GetType().Name}";
 
         public override List<int> GlobalSlotsMask => UsedSlots.GetOrAdd(ShaderType);
 
-        protected override Deferred<ShaderContext, DrawCall> PreviousDeferred => Owner.Previous?.Shader(ShaderType).Deferred;
-
-        public override string Name => $"{ShaderType.ToString()[0]}S{base.Name}";
-
-        public ShaderType ShaderType { get; set; }
+        protected override Deferred<ShaderContext, DrawCall> PreviousDeferred => Owner.Fallback?.Shader(ShaderType).Deferred;
     }
 }

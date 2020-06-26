@@ -15,14 +15,14 @@ namespace Migoto.Log.Parser
     {
         public Frame Owner { get; set; }
         public Deferred<DrawCall, DrawCall> Deferred { get; }
-        public DrawCall Previous { get; }
+        public DrawCall Fallback { get; }
 
         public DrawCall(uint index, DrawCall previous)
         {
             Index = index;
-            Previous = previous;
+            Fallback = previous;
             Deferred = new Deferred<DrawCall, DrawCall>(this, previous);
-            Shaders = Enums.Values<ShaderType>().ToDictionary(s => s, s => new ShaderContext(s, this, previous));
+            Shaders = Enums.Values<ShaderType>().ToDictionary(s => s, s => new ShaderContext(this, previous?.Shader(s)));
 
             Mappings = new OwnedCollection<DrawCall, Map>(this);
             Unmappings = new OwnedCollection<DrawCall, Unmap>(this);

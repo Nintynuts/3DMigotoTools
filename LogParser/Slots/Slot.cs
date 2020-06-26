@@ -1,16 +1,19 @@
 ﻿namespace Migoto.Log.Parser.Slots
 {
-    using ApiCalls;
+    public interface ISlot<TOwner> : IOverriden<TOwner>
+    {
+        int Index { get; }
+    }
 
-    public abstract class Slot : IOwned<ApiCall>, IOverriden<ApiCall>
+    public abstract class Slot<TOwner> : IOwned<TOwner>, ISlot<TOwner>
     {
         public int Index { get; set; } = -1;
 
-        public ApiCall Owner { get; protected set; }
-        public ApiCall LastUser { get; private set; }
+        public TOwner Owner { get; protected set; }
+        public TOwner LastUser { get; private set; }
 
-        public virtual void SetOwner(ApiCall newOwner) => Owner = newOwner;
+        public virtual void SetOwner(TOwner newOwner) => Owner = newOwner;
 
-        public void SetLastUser(ApiCall lastUser) => LastUser = lastUser;
+        public void SetLastUser(TOwner lastUser) => LastUser = lastUser;
     }
 }
