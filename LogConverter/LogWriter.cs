@@ -18,11 +18,14 @@ namespace Migoto.Log.Converter
     public enum DrawCallColumns
     {
         Index = 0,
+        IA = VB|IB,
         VB = 1,
         IB = 2,
-        OM = 16,
-        Logic = 32,
-        All = VB|IB|OM|Logic,
+        OM = RT|D,
+        RT = 16,
+        D = 32,
+        Logic = 64,
+        All = IA|OM|Logic,
     }
 
     public enum ShaderColumns
@@ -119,8 +122,7 @@ namespace Migoto.Log.Converter
                 var shaderType = _.shaderType;
                 var subColumns = _.columns;
                 char x = shaderType.ToString().ToLower()[0];
-                if (subColumns.HasFlag(ShaderColumns.Hash))
-                    yield return new HashColumn($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader));
+                yield return new HashColumn($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader));
                 if (subColumns.HasFlag(ShaderColumns.CB))
                     yield return new AssetColumnSet($"{x}s-cb", dc => dc.Shader(shaderType).SetConstantBuffers, SetConstantBuffers.UsedSlots.GetOrAdd(shaderType));
                 if (subColumns.HasFlag(ShaderColumns.T))
@@ -129,11 +131,11 @@ namespace Migoto.Log.Converter
 
             columns.AddRange(shaders.OrderBy(s => s.type).SelectMany(GetShaderColumns));
 
-            if (columnGroups.HasFlag(DrawCallColumns.OM))
-                columns.AddRange(new IColumns[] {
-                    new AssetColumnSet("o", dc => dc.SetRenderTargets, OMSetRenderTargets.UsedSlots),
-                    new HashColumn("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset),
-                });
+            if (columnGroups.HasFlag(DrawCallColumns.RT))
+                columns.Add(new AssetColumnSet("o", dc => dc.SetRenderTargets, OMSetRenderTargets.UsedSlots));
+
+            if (columnGroups.HasFlag(DrawCallColumns.D))
+                columns.Add(new HashColumn("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset));
 
             if (columnGroups.HasFlag(DrawCallColumns.Logic))
                 columns.Add(new Column("Pre,Post", dc => $"\"{logicSplit.Replace(dc.Logic ?? "", "\",\"")}\""));

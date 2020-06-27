@@ -26,13 +26,16 @@ Please raise an issue if something is missing that seems useful.
 It is possible to customise the columns output by the program. The following are valid:
 
 - `All` : uses all below except shaders
-- `VB` : Vertex buffer hashes, vertex Start and Count, and common Input Assembler info
-- `IB` : Index buffer hash, index Start and Count, and common Input Assembler info
+- `IA` : Input Assembler hashes (shorthand for the following, which both include common Input Assembler info)
+	- `VB` : Vertex buffer hashes, vertex Start and Count
+	- `IB` : Index buffer hash, index Start and Count
 - `?S` : Shader, replace `?` with `V/H/D/G/P/C` for associated shader, will output all 3 below
 	- `?S-Hash` : Only exports Hash
 	- `?S-CB` : Only exports Hash and Constant Buffer hashes
 	- `?S-T` : Only exports Hash and Texture hashes
-- `OM` : Output Merger hashes (Render Target and Depth Stencil)
+- `OM` : Output Merger hashes (shorthand for the following)
+	- `RT` : Render Target hashes
+	- `D` : Depth Stencil hash
 - `Logic` : 3Dmigoto logic trace (for `ShaderOverride`s etc.), split into Pre and Post
 
 The default configuration is equivalent to `All VS PS`.
