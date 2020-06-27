@@ -5,6 +5,8 @@ namespace Migoto.Log.Converter
 {
     using Parser;
 
+    using System.Text.RegularExpressions;
+
     class Program
     {
         static void Main(string[] args)
@@ -32,6 +34,9 @@ namespace Migoto.Log.Converter
                 return;
             }
 
+            Regex frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
+            if (frameAnalysisPattern.IsMatch(inputFilePath))
+                inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
             var outputFilePath = inputFilePath.Replace(".txt", ".csv");
 
             var outputCsv = TryOpenFile(outputFilePath);
