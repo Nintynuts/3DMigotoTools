@@ -74,7 +74,7 @@ Anyone evaluating this tool, please raise issues with a sample Log.txt and detai
 
 This app is built on .NET Core 3.1, and will require the runtime to be installed. 
 
-It is therefore theoretically compatible with Linux, but has only been tested on Windows 10 v2004.
+It is therefore theoretically compatible with Linux, but has only been tested on Windows 10 versions 1903 and 2004 (although any Windows 10 should be fine).
 
 ## Credits
 
