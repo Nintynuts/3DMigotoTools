@@ -13,8 +13,11 @@ Load a log file by one of the following:
 - Type it into the console window when prompted
 
 The application will parse the content of the file into memory for future operations.
+
 For each Draw Call, messages may appear for inefficient use of the API (overwriting slots in the same draw call).
+
 Messages may also appear for API calls that are supported, but the majority of those that seemed relevant have.
+
 
 Please raise an issue if something is missing that seems useful.
 
@@ -53,17 +56,21 @@ As well as making the data tabular, the following things are improved over a raw
 ### Generate Asset lifecycle CSV  (`Asset` function)
 
 By entering an asset hash (for a Buffer or Texture), a CSV file will be produced with every usage of that asset over the course of the log.
+
 Where pipeline state re-use has been active, a distinct list of shaders used over the active period will be written to simplify the output, but be aware that the last use may be after other uses listed below it.
+
 Input Assembler assets (IB & VB) will identify the VS hash, whereas Output Merger assets (RT & D) will identify the PS hash.
 
 ## Download and providing feedback
 
 Currently I consider this to be pre-release, so I am only providing copies to those who ask for it, although I can't stop you from checking it out and building it yourself.
+
 Anyone evaluating this tool, please raise issues with a sample Log.txt and details of your issue. I'm also open to suggestions, although I have a long list of ideas already.
 
 ## Requirements
 
 This app is built on .NET Core 3.1, and will require the runtime to be installed. 
+
 It is therefore theoretically compatible with Linux, but has only been tested on Windows 10 v2004.
 
 ## Credits
