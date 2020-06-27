@@ -92,6 +92,9 @@ namespace Migoto.Log.Converter
                 }
             }
 
+            // Consolidate duplicate entries, just in case!
+            shaderColumns = shaderColumns.GroupBy(s => s.type).Select(s => (s.Key, s.Select(c => c.columns).Aggregate((a, b) => a | b))).ToList();
+
             Regex frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
             if (frameAnalysisPattern.IsMatch(inputFilePath))
                 inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
