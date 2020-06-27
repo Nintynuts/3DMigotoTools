@@ -42,7 +42,7 @@ The default configuration is equivalent to `All VS PS`.
 
 When using the command line, column identifiers can be supplied after the log name to generate output automatically.
 
-Frame number will only be listed if more than one exists in the log (when using `analyse_options = hash`).
+Frame number will only be listed if more than one exists in the log (when using `analyse_options = hold`).
 
 The output file will omit any numbered columns that contain no data (unused slots).
 
