@@ -12,7 +12,7 @@ namespace Migoto.Log.Parser
     using Assets;
     using Slots;
 
-    public class Parser
+    public class FrameAnalysis
     {
         private readonly StreamReader stream;
         private readonly Action<string> logger;
@@ -30,12 +30,6 @@ namespace Migoto.Log.Parser
         private readonly MethodInfo shader = typeof(DrawCall).GetMethod(nameof(DrawCall.Shader));
         private readonly Dictionary<Type, PropertyInfo> shaderContextProps = typeof(ShaderContext).GetProperties().Where(p => p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
 
-        private static ShaderType GetShaderType(PropertyInfo p)
-            => Enums.Parse<ShaderType>(p.Name.Substring(0, p.Name.Length - "Shader".Length));
-
-        private readonly Dictionary<char, ShaderType> ShaderTypes
-            = Enums.Values<ShaderType>().ToDictionary(s => s.ToString()[0], s => s);
-
         public readonly Dictionary<string, int> apiCallsSkipped = new Dictionary<string, int>();
         public readonly Dictionary<string, int> frameSkipped = new Dictionary<string, int>();
 
@@ -50,7 +44,7 @@ namespace Migoto.Log.Parser
         private DrawCall drawCall = new DrawCall(0, null);
         private IApiCall apiCall = null;
 
-        public Parser(StreamReader stream, Action<string> logger)
+        public FrameAnalysis(StreamReader stream, Action<string> logger)
         {
             this.stream = stream;
             this.logger = logger;
@@ -183,7 +177,7 @@ namespace Migoto.Log.Parser
                 RecordUnhandled(methodName);
                 return;
             }
-            ShaderTypes.TryGetValue(methodName[0], out ShaderType? shaderType);
+            ShaderTypes.FromLetter.TryGetValue(methodName[0], out ShaderType? shaderType);
             apiCall = apiCallType.Construct<IApiCall>(apiCallNo);
             apiCallNo++;
 

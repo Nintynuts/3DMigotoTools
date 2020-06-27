@@ -21,7 +21,7 @@ namespace Migoto.Log.Parser.ApiCalls
 
         public ShaderType ShaderType { get; set; }
 
-        string INamed.Name => $"{ShaderType.ToString()[0]}S{GetType().Name}";
+        string INamed.Name => $"{ShaderType.Letter()}S{GetType().Name}";
 
         public override List<int> GlobalSlotsMask => UsedSlots.GetOrAdd(ShaderType);
 
