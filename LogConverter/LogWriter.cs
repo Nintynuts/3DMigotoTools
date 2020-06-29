@@ -18,14 +18,14 @@ namespace Migoto.Log.Converter
     public enum DrawCallColumns
     {
         Index = 0,
-        IA = VB|IB,
+        IA = VB | IB,
         VB = 1,
         IB = 2,
-        OM = RT|D,
+        OM = RT | D,
         RT = 16,
         D = 32,
         Logic = 64,
-        All = IA|OM|Logic,
+        All = IA | OM | Logic,
     }
 
     public enum ShaderColumns
@@ -33,7 +33,7 @@ namespace Migoto.Log.Converter
         Hash = 0,
         CB = 1,
         T = 2,
-        All = Hash|CB|T,
+        All = Hash | CB | T,
     }
 
     public static class LogWriter
@@ -83,6 +83,17 @@ namespace Migoto.Log.Converter
 
             private static string AsString(DrawCall dc, uint? number)
                 => number?.ToString() ?? "?";
+        }
+
+        public static StreamWriter GetOutputFileFrom(string inputFilePath)
+        {
+            Regex frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
+            if (frameAnalysisPattern.IsMatch(inputFilePath))
+                inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
+            var outputFilePath = inputFilePath.Replace(".txt", ".csv");
+
+            var outputCsv = IOHelpers.TryOpenFile(outputFilePath);
+            return outputCsv;
         }
 
         public static void Write(List<Frame> frames, StreamWriter output, DrawCallColumns columnGroups, IEnumerable<(ShaderType type, ShaderColumns columns)> shaders)

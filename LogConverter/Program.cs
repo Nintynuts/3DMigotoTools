@@ -1,72 +1,134 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace Migoto.Log.Converter
 {
-    using Parser.ApiCalls;
-    using Parser;
+    using Migoto.Log.Parser;
+    using Migoto.Log.Parser.ApiCalls;
 
     class Program
     {
+        private static DrawCallColumns columns;
+        private static List<(ShaderType type, ShaderColumns columns)> shaderColumns;
+        private static FrameAnalysis frameAnalysis;
+
         static void Main(string[] args)
         {
+            Console.WriteLine("Press Escape to cancel or exit");
+
             string inputFilePath = "";
+
             if (args?.Length > 0)
                 inputFilePath = args[0];
 
-            while (inputFilePath == "" || !File.Exists(inputFilePath))
+            if (Directory.Exists(inputFilePath) || File.Exists(inputFilePath))
             {
-                if (inputFilePath != "")
-                    Console.WriteLine("File doesn't exist, please try again...");
-
-                Console.Write("Please enter input file path (log.txt): ");
-                inputFilePath = Console.ReadLine().Replace("\"", "");
-            }
-
-            var frameAnalysis = new FrameAnalysis(new StreamReader(inputFilePath), msg => Console.WriteLine(msg));
-
-            if (!frameAnalysis.Parse())
-            {
-                Console.WriteLine("Provided file is not a 3DMigoto FrameAnalysis log file");
+                GetColumnSelection(args.Skip(1));
+                if (GetWatchPath(out var validPath, inputFilePath))
+                {
+                    WatchFolder(validPath);
+                }
+                else if (LoadLog(out validPath, inputFilePath))
+                {
+                    OutputLog(frameAnalysis, validPath, columns, shaderColumns);
+                    LogFunctions(inputFilePath);
+                }
                 return;
             }
 
-            Console.WriteLine("Press Escape to exit");
+            GetColumnSelection(args);
 
-            if (args.Length > 1)
-                OutputLog(frameAnalysis, inputFilePath, args);
-
-            while (ReadLineOrEsc("Enter function to perform: ", out var func))
+            while (ConsoleEx.ReadLineOrEsc("Enter mode of operation: ", out var func))
             {
-                switch (func.ToLower())
+                switch (func)
                 {
-                    case "log":
-                        OutputLog(frameAnalysis, inputFilePath, args); break;
-                    case "asset":
-                        OutputAsset(frameAnalysis, Path.GetDirectoryName(inputFilePath)); break;
+                    case "manual":
+                        while (LoadLog(out var validPath))
+                            LogFunctions(validPath);
+                        break;
+                    case "auto":
+                        while (GetWatchPath(out var validPath))
+                            WatchFolder(validPath);
+                        break;
                 }
             }
         }
 
-        private static void OutputLog(FrameAnalysis frameAnalysis, string inputFilePath, string[] args)
+        private static void WatchFolder(string inputFilePath)
+        {
+            var auto = new AutoConverter(inputFilePath, columns, shaderColumns, Console.WriteLine);
+            Console.WriteLine("Watching for new FrameAnalysis export...");
+            while (Console.ReadKey(true).Key != ConsoleKey.Escape)
+                continue;
+            auto.Quit();
+        }
+
+        private static void LogFunctions(string inputFilePath)
+        {
+            while (ConsoleEx.ReadLineOrEsc("Enter function to perform: ", out var func))
+            {
+                switch (func.ToLower())
+                {
+                    case "log":
+                        OutputLog(frameAnalysis, inputFilePath, columns, shaderColumns); break;
+                    case "asset":
+                        OutputAsset(frameAnalysis, Path.GetDirectoryName(inputFilePath)); break;
+                    case "set-columns":
+                        GetColumnSelection(); break;
+                }
+            }
+        }
+
+        private static bool LoadLog(out string validFilePath, string path = "")
+        {
+            if (!IOHelpers.GetValidPath("input file (log.txt)", p => File.Exists(p), "File doesn't exist", out validFilePath, path))
+                return false;
+
+            frameAnalysis = new FrameAnalysis(new StreamReader(validFilePath), Console.WriteLine);
+
+            if (!frameAnalysis.Parse())
+            {
+                Console.WriteLine("Provided file is not a 3DMigoto FrameAnalysis log file");
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool GetWatchPath(out string watchFolderPath, string path = "")
+        {
+            return IOHelpers.GetValidPath("game executable (location of d3dx.ini)",
+                p => Directory.Exists(p) && File.Exists(Path.Combine(p, "d3dx.ini")),
+                "Directory doesn't exist, or d3dx.ini not present",
+                out watchFolderPath, path);
+        }
+
+        private static void OutputLog(FrameAnalysis frameAnalysis, string inputFilePath, DrawCallColumns columns, List<(ShaderType type, ShaderColumns columns)> shaderColumns)
+        {
+            var outputCsv = LogWriter.GetOutputFileFrom(inputFilePath);
+
+            LogWriter.Write(frameAnalysis.Frames, outputCsv, columns, shaderColumns);
+
+            Console.WriteLine("Export Log complete");
+        }
+
+        private static bool GetColumnSelection(IEnumerable<string> cmdColumns = null)
         {
             IEnumerable<string> columnSelection;
-            DrawCallColumns columns = DrawCallColumns.Index;
-            var shaderColumns = new List<(ShaderType type, ShaderColumns columns)>();
-
-            if (args.Length > 1)
+            columns = DrawCallColumns.Index;
+            shaderColumns = new List<(ShaderType type, ShaderColumns columns)>();
+            if (cmdColumns?.Any() == true)
             {
-                columnSelection = args.Skip(1);
+                columnSelection = cmdColumns;
             }
             else
             {
-                if (!ReadLineOrEsc("Please enter column selection (default: VB IB VS PS OM Logic): ", out var result))
+                if (!ConsoleEx.ReadLineOrEsc("Please enter column selection (default: VB IB VS PS OM Logic): ", out var result))
                 {
                     Console.WriteLine("Export Log aborted");
-                    return;
+                    return false;
                 }
                 columnSelection = result.Split(' ');
             }
@@ -95,27 +157,18 @@ namespace Migoto.Log.Converter
             // Consolidate duplicate entries, just in case!
             shaderColumns = shaderColumns.GroupBy(s => s.type).Select(s => (s.Key, s.Select(c => c.columns).Aggregate((a, b) => a | b))).ToList();
 
-            Regex frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
-            if (frameAnalysisPattern.IsMatch(inputFilePath))
-                inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
-            var outputFilePath = inputFilePath.Replace(".txt", ".csv");
-
-            var outputCsv = TryOpenFile(outputFilePath);
-
-            LogWriter.Write(frameAnalysis.Frames, outputCsv, columns, shaderColumns);
-
-            Console.WriteLine("Export Log complete");
+            return true;
         }
 
         private static void OutputAsset(FrameAnalysis frameAnalysis, string folder)
         {
-            while (ReadLineOrEsc("Enter a resource hash to dump lifecycle for: ", out var hash))
+            while (ConsoleEx.ReadLineOrEsc("Enter a resource hash to dump lifecycle for: ", out var hash))
             {
                 hash = hash.ToLower();
 
                 if (frameAnalysis.Assets.TryGetValue(hash, out var asset))
                 {
-                    var assetFile = TryOpenFile(Path.Combine(folder, $"{hash}.csv"));
+                    var assetFile = IOHelpers.TryOpenFile(Path.Combine(folder, $"{hash}.csv"));
                     try
                     {
                         AssetWriter.Write(asset, assetFile);
@@ -137,65 +190,6 @@ namespace Migoto.Log.Converter
             Console.WriteLine("Export Asset aborted");
         }
 
-        private static StreamWriter TryOpenFile(string fileName)
-        {
-            StreamWriter output = null;
-            do
-            {
-                try
-                {
-                    output = new StreamWriter(fileName);
-                }
-                catch (IOException)
-                {
-                    Console.WriteLine($"File: {fileName} in use, please close it and press any key to continue");
-                }
-            } while (output == null && Console.ReadKey() != null);
-            return output;
-        }
 
-        private static bool ReadLineOrEsc(string message, out string result)
-        {
-            Console.Write(message);
-
-            result = "";
-            int curIndex = 0;
-            var stroke = Console.ReadKey(true);
-            while (stroke.Key != ConsoleKey.Escape && stroke.Key != ConsoleKey.Enter)
-            {
-                switch (stroke.Key)
-                {
-                    case ConsoleKey.Backspace:
-                        if (curIndex > 0)
-                        {
-                            result = result.Remove(result.Length - 1);
-                            Console.Write(stroke.KeyChar);
-                            Console.Write(' ');
-                            Console.Write(stroke.KeyChar);
-                            curIndex--;
-                        }
-                        break;
-                    default:
-                        if (!char.IsControl(stroke.KeyChar))
-                        {
-                            result += stroke.KeyChar;
-                            Console.Write(stroke.KeyChar);
-                            curIndex++;
-                        }
-                        break;
-                }
-                stroke = Console.ReadKey(true);
-            }
-            ClearLine();
-            return stroke.Key != ConsoleKey.Escape;
-        }
-
-        private static void ClearLine()
-        {
-            int currentLine = Console.CursorTop;
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.Write(new string(' ', Console.WindowWidth));
-            Console.SetCursorPosition(0, currentLine);
-        }
     }
 }

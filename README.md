@@ -4,7 +4,27 @@ This software is intended to be a suite of tools to assist shaderhackers.
 
 ## Current features
 
-### Import Frame Analysis log.txt
+When running the application without command-line arguments, the following options are presented and multiple sessions can be performed without restarting.
+
+It's also possible to activate each of these modes implicitly by entering an appropriate path and optionally the desired column configuration via the command line, and in these cases the application will exit when the session completes.
+
+### Auto Conversion (`Auto` mode)
+
+The tool can convert logs as they are generated automatically. This requires providing a folder path containing the d3dx.ini file for your game.
+
+There are several ways to enter the folder path:
+- Drag it to the exe
+- Run the exe with the file name as the first argument
+- Drag it into the console window when prompted
+- Type it into the console window when prompted
+
+When a new FrameAnalysis folder is detected, it will generate a CSV and a conversion message log, see below for more information.
+
+### Interactive Conversion (`Manual` mode)
+
+When a single log file is loaded, it is possible to perform multiple functions without reloading the log. The following functions can be performed:
+
+#### Import Frame Analysis log.txt
 
 Load a log file by one of the following:
 - Drag it to the exe
@@ -18,12 +38,19 @@ For each Draw Call, messages may appear for inefficient use of the API (overwrit
 
 Messages may also appear for API calls that are supported, but the majority of those that seemed relevant have.
 
-
 Please raise an issue if something is missing that seems useful.
 
-### Generate simplified Frame Analysis CSV (`Log` function)
+#### Generate simplified Frame Analysis CSV (`Log` and `Set-Columns` functions)
 
-It is possible to customise the columns output by the program. The following are valid:
+It is possible to customise the columns output by the program.
+
+These can be provided via the command line. If they follow a file/folder path the application will start the appropriate mode implicitly.
+
+If they are not supplied via the command line, you will be prompted to enter them when the application starts.
+
+If you wish to change the columns being output while operating in `Manual` mode, the function `set-columns` can be used.
+
+The following column ids are valid:
 
 - `All` : uses all below except shaders
 - `IA` : Input Assembler hashes (shorthand for the following, which both include common Input Assembler info)
@@ -40,8 +67,6 @@ It is possible to customise the columns output by the program. The following are
 
 The default configuration is equivalent to `All VS PS`.
 
-When using the command line, column identifiers can be supplied after the log name to generate output automatically.
-
 Frame number will only be listed if more than one exists in the log (when using `analyse_options = hold`).
 
 The output file will omit any numbered columns that contain no data (unused slots).
@@ -56,7 +81,7 @@ As well as making the data tabular, the following things are improved over a raw
 - Where Buffers are mapped (edited) or Views are cleared, an asterisk will be added to the end of the hash
 - 3Dmigoto Logic trace has been processed to be more readable and less verbose
 
-### Generate Asset lifecycle CSV  (`Asset` function)
+#### Generate Asset lifecycle CSV  (`Asset` function)
 
 By entering an asset hash (for a Buffer or Texture), a CSV file will be produced with every usage of that asset over the course of the log.
 
