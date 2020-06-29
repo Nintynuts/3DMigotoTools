@@ -42,7 +42,7 @@ namespace Migoto.Log.Converter
 
             while (ConsoleEx.ReadLineOrEsc("Enter mode of operation: ", out var func))
             {
-                switch (func)
+                switch (func.ToLower())
                 {
                     case "manual":
                         while (LoadLog(out var validPath))
