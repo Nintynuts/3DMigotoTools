@@ -5,16 +5,16 @@ VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogConverter", "LogConverter\LogConverter.csproj", "{71E0E086-3F0A-4859-9B3D-521E170431E9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogParser", "LogParser\LogParser.csproj", "{60FFDE41-751E-4762-A7B1-4D1FE750EB60}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FrameAnalysis", "FrameAnalysis\FrameAnalysis.csproj", "{60FFDE41-751E-4762-A7B1-4D1FE750EB60}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogParser.Test", "LogParser.Test\LogParser.Test.csproj", "{D17F5556-D2A8-460E-A7F9-B627E5368E37}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FrameAnalysis.Test", "FrameAnalysis.Test\FrameAnalysis.Test.csproj", "{D17F5556-D2A8-460E-A7F9-B627E5368E37}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7AF5BE5B-EE53-4B85-A805-24E241FBD796}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Config", "ConfigParser\Config.csproj", "{A07E7F1B-B2E0-4C14-90A4-C22CA90445D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Config", "Config\Config.csproj", "{A07E7F1B-B2E0-4C14-90A4-C22CA90445D6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderFixes", "ShaderFixes\ShaderFixes.csproj", "{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}"
 EndProject

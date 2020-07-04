@@ -1,15 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-using Migoto.Log.Parser.ApiCalls;
-using Migoto.Log.Parser.Slots;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Migoto.Log.Parser.Test
 {
+
+    using ApiCalls;
+    using Slots;
+
     [TestClass]
     public class SlotsTests
     {
@@ -79,7 +78,7 @@ namespace Migoto.Log.Parser.Test
             NumSlots = setByMerge ? 0 : numSlots;
             if (setByMerge)
                 InitData(i => new TestSlots((uint)i, 1), Merge);
-            
+
             InitData(i => new TestSlot(i), SlotsPopulated.Add);
 
             void InitData<T>(Func<int, T> construct, Action<T> method) where T : class
