@@ -6,7 +6,8 @@ using System.Linq;
 namespace Migoto.Log.Parser.Assets
 {
     using ApiCalls;
-
+    using Config;
+    using ShaderFixes;
     using Slots;
 
     public interface IHash
@@ -33,5 +34,24 @@ namespace Migoto.Log.Parser.Assets
 
         public List<IApiCall> LifeCycle
             => Uses.Select(s => s.Owner).OrderBy(dc => dc.Owner.Owner.Index).ThenBy(dc => dc.Owner.Index).ThenBy(dc => dc.Order).ToList();
+
+        public TextureOverride Override { get; set; }
+        public List<Register> VariableNames { get; } = new List<Register>();
+
+        public string GetName(IApiCall apiCall, int slot)
+        {
+            return Override?.FriendlyName
+                ?? (apiCall is IShaderCall ? GetNameForSlot(slot) : null)
+                ?? (VariableNames.Count > 0 ? CommonName : string.Empty);
+        }
+
+        private string CommonName => VariableNames.Select(v => v.Name).GroupBy(v => v).OrderByDescending(g => g.Count()).First().Key;
+
+        public string GetNameForSlot(int slot)
+        {
+            if (VariableNames.Any(v => v.Index == slot))
+                return VariableNames.First(v => v.Index == slot).Name;
+            return null;
+        }
     }
 }

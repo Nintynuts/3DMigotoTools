@@ -1,7 +1,8 @@
 {
   "profiles": {
     "LogConverter": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "\"G:\\Steam\\steamapps\\common\\Tom Clancy's Splinter Cell Blacklist\\src\\SYSTEM\\d3dx.ini\""
     }
   }
 }

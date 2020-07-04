@@ -7,4 +7,9 @@
     <Authors>Nintynuts</Authors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ConfigParser\Config.csproj" />
+    <ProjectReference Include="..\ShaderFixes\ShaderFixes.csproj" />
+  </ItemGroup>
+
 </Project>

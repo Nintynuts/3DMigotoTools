@@ -1,9 +1,11 @@
 ﻿namespace Migoto.Log.Parser.Slots
 {
-    public interface ISlot<TOwner> : IOverriden<TOwner>
+    public interface ISlot
     {
         int Index { get; }
     }
+
+    public interface ISlot<TOwner> : ISlot, IOverriden<TOwner> { }
 
     public abstract class Slot<TOwner> : IOwned<TOwner>, ISlot<TOwner>
     {

@@ -41,5 +41,8 @@ namespace Migoto.Log.Parser
         {
             return dict.GetOrAdd(key, () => defaultValue);
         }
+
+        public static IEnumerable<T> ExceptNull<T>(this IEnumerable<T> items) where T : class
+            => items.Where(s => s != null);
     }
 }

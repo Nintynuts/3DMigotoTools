@@ -25,8 +25,12 @@ namespace Migoto.Log.Converter
             };
 
             output.WriteLine($"Type:,{GetAssetSubType(asset)},{asset.GetType().Name}");
-            output.WriteLine($"Slot,Count");
-            asset.Slots.ForEach(s => output.WriteLine($"{s.index},{s.slots.Count}"));
+            if (asset.Override != null)
+                output.WriteLine($"Override:,{asset.Override.Name}");
+            output.WriteLine();
+            output.WriteLine($"Slot,Count,Variable");
+            asset.Slots.ForEach(s => output.WriteLine($"{s.index},{s.slots.Count},{asset.GetNameForSlot(s.index)}"));
+            output.WriteLine();
             output.WriteLine(columns.Headers());
             asset.LifeCycle.ForEach(dc => output.WriteLine(columns.Values(dc)));
             output.Close();

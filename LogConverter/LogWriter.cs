@@ -45,10 +45,16 @@ namespace Migoto.Log.Converter
 
             public static string GetValue(DrawCall ctx, IResource item)
             {
-                return item == null ? string.Empty
-                    : item.Asset == null ? "No Hash"
-                    : item.Asset.Hex + (GetModifier(ctx, item).Any(m => m.Slot?.Asset == item.Asset) ? "*" : string.Empty);
+                return $"\"{GetText(ctx, item).Trim()}\"";
             }
+
+            private static string GetText(DrawCall ctx, IResource item)
+                => item == null ? string.Empty
+                   : item.Asset == null ? "No Hash"
+                   : item.Asset.Hex + AsteriskIfModified(ctx, item) + " " + item.Asset.GetName(item.Owner, (item as ISlot)?.Index ?? -1);
+
+            private static string AsteriskIfModified(DrawCall ctx, IResource item)
+                => GetModifier(ctx, item).Any(m => m.Slot?.Asset == item.Asset) ? "*" : string.Empty;
 
             public static IEnumerable<ISingleSlot> GetModifier(DrawCall ctx, IResource item)
             {
@@ -67,13 +73,26 @@ namespace Migoto.Log.Converter
             }
         }
 
+        private class ShaderColumn : Column<DrawCall, Shader>
+        {
+            public ShaderColumn(string name, Func<DrawCall, Shader> provider)
+                : base(name, provider, GetValue) { }
+
+            public static string GetValue(DrawCall dc, Shader shader)
+                => $"\"{GetText(shader).Trim()}\"";
+
+            private static string GetText(Shader shader) => (shader?.Hex ?? string.Empty) + " " + shader?.Name;
+        }
+
         private class HashColumn : Column<DrawCall, IHash>
         {
             public HashColumn(string name, Func<DrawCall, IHash> provider)
                 : base(name, provider, GetValue) { }
 
             public static string GetValue(DrawCall dc, IHash hash)
-                => hash?.Hex ?? string.Empty;
+                => $"\"{GetText(hash).Trim()}\"";
+
+            private static string GetText(IHash hash) => hash?.Hex ?? string.Empty;
         }
 
         private class UintColumn : Column<DrawCall, uint?>
@@ -133,7 +152,7 @@ namespace Migoto.Log.Converter
                 var shaderType = _.shaderType;
                 var subColumns = _.columns;
                 char x = shaderType.ToString().ToLower()[0];
-                yield return new HashColumn($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader));
+                yield return new ShaderColumn($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader));
                 if (subColumns.HasFlag(ShaderColumns.CB))
                     yield return new AssetColumnSet($"{x}s-cb", dc => dc.Shader(shaderType).SetConstantBuffers, SetConstantBuffers.UsedSlots.GetOrAdd(shaderType));
                 if (subColumns.HasFlag(ShaderColumns.T))

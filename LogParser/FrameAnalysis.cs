@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -34,8 +35,8 @@ namespace Migoto.Log.Parser
         public readonly Dictionary<string, int> frameSkipped = new Dictionary<string, int>();
 
         public List<Frame> Frames { get; } = new List<Frame>();
-        public Dictionary<string, Asset> Assets { get; } = new Dictionary<string, Asset>();
-        public Dictionary<string, Shader> Shaders { get; } = new Dictionary<string, Shader>();
+        public Dictionary<uint, Asset> Assets { get; } = new Dictionary<uint, Asset>();
+        public Dictionary<ulong, Shader> Shaders { get; } = new Dictionary<ulong, Shader>();
 
         private uint frameNo = 0;
         private Frame frame = new Frame(0); // For Present post logic
@@ -190,23 +191,25 @@ namespace Migoto.Log.Parser
                 apiCall.SetFromString(name, argsMatches.Groups["value"].Value);
                 argsMatches = argsMatches.NextMatch();
             }
-            var hash = captures["hash"];
-            if (hash.Success)
+            var hex = captures["hash"];
+            if (hex.Success)
             {
                 if (apiCall is SetShader setShader)
                 {
-                    if (!Shaders.TryGetValue(hash.Value, out var shader))
+                    var hash = ulong.Parse(hex.Value, NumberStyles.HexNumber);
+                    if (!Shaders.TryGetValue(hash, out var shader))
                     {
                         shader = new Shader(shaderType.Value);
-                        shader.SetFromString(nameof(Shader.Hash), hash.Value);
-                        Shaders.Add(hash.Value, shader);
+                        shader.Hash = hash;
+                        Shaders.Add(hash, shader);
                     }
                     shader.References.Add(drawCall);
                     setShader.Shader = shader;
                 }
                 else if (apiCall is SingleSlot singleSlot)
                 {
-                    if (!Assets.TryGetValue(hash.Value, out var asset) || asset is Unknown)
+                    var hash = uint.Parse(hex.Value, NumberStyles.HexNumber);
+                    if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
                     {
                         var unknown = asset as Unknown;
 
@@ -215,7 +218,7 @@ namespace Migoto.Log.Parser
                         else if (unknown == null)
                             asset = new Unknown();
 
-                        RegisterAsset(hash.Value, asset, unknown);
+                        RegisterAsset(hash, asset, unknown);
                     }
                     singleSlot.UpdateAsset(asset);
                 }
@@ -300,7 +303,8 @@ namespace Migoto.Log.Parser
 
             if (captures["hash"].Success)
             {
-                var hash = captures["hash"].Value;
+                var hex = captures["hash"].Value;
+                var hash = uint.Parse(hex, NumberStyles.HexNumber);
                 if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
                 {
                     var unknown = asset as Unknown;
@@ -312,9 +316,9 @@ namespace Migoto.Log.Parser
             }
         }
 
-        private void RegisterAsset(string hash, Asset asset, Unknown unknown = null)
+        private void RegisterAsset(uint hash, Asset asset, Unknown unknown = null)
         {
-            asset.SetFromString(nameof(Log.Parser.Assets.Asset.Hash), hash);
+            asset.Hash = hash;
 
             if (unknown != null)
             {

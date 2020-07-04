@@ -4,33 +4,33 @@ This software is intended to be a suite of tools to assist shaderhackers.
 
 ## Current features
 
-When running the application without command-line arguments, the following options are presented and multiple sessions can be performed without restarting.
+The application can convert FrameAnalysis logs to a tabular format.
 
-It's also possible to activate each of these modes implicitly by entering an appropriate path and optionally the desired column configuration via the command line, and in these cases the application will exit when the session completes.
-
-### Auto Conversion (`Auto` mode)
-
-The tool can convert logs as they are generated automatically. This requires providing a folder path containing the d3dx.ini file for your game.
-
-There are several ways to enter the folder path:
+There are several ways to enter the `d3dx.ini` or `log.txt` path:
 - Drag it to the exe
 - Run the exe with the file name as the first argument
 - Drag it into the console window when prompted
 - Type it into the console window when prompted
+
+When running the application without passing a `log.txt` file argument, the following options are presented and multiple sessions can be performed without restarting.
+
+### Import metadata from ini files and shader fixes
+
+If running the application with a `d3dx.ini` path (or with a `log.txt` path from the original FrameAnalysis folder it was dumped into), the application will scrape these files for Shader and Asset names to associate with hashes read from the frame analysis.
+
+### Auto Conversion (`Auto` mode)
+
+The tool can convert logs as they are generated automatically. This requires providing the `d3dx.ini` file path for your game.
 
 When a new FrameAnalysis folder is detected, it will generate a CSV and a conversion message log, see below for more information.
 
 ### Interactive Conversion (`Manual` mode)
 
+It's possible to activate manual mode implicitly by providing a `log.txt` file path and optionally the desired column configuration via the command line, and in this case the application will exit when the session completes.
+
 When a single log file is loaded, it is possible to perform multiple functions without reloading the log. The following functions can be performed:
 
-#### Import Frame Analysis log.txt
-
-Load a log file by one of the following:
-- Drag it to the exe
-- Run the exe with the file name as the first argument
-- Drag it into the console window when prompted
-- Type it into the console window when prompted
+#### Import Frame Analysis `log.txt`
 
 The application will parse the content of the file into memory for future operations.
 
@@ -44,7 +44,7 @@ Please raise an issue if something is missing that seems useful.
 
 It is possible to customise the columns output by the program.
 
-These can be provided via the command line. If they follow a file/folder path the application will start the appropriate mode implicitly.
+These can be provided via the command line, either alone or following the file path.
 
 If they are not supplied via the command line, you will be prompted to enter them when the application starts.
 
@@ -79,6 +79,7 @@ Detail regarding Input Assembler information:
 As well as making the data tabular, the following things are improved over a raw log:
 - Partial re-use of the same pipeline state is extrapolated per draw-call so each can be understood in isolation
 - Where Buffers are mapped (edited) or Views are cleared, an asterisk will be added to the end of the hash
+- Shaders, Buffers and Textures which have been named via Overrides in an ini or in a shader fix will be annotated.
 - 3Dmigoto Logic trace has been processed to be more readable and less verbose
 
 #### Generate Asset lifecycle CSV  (`Asset` function)

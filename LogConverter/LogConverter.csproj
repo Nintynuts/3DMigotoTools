@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ConfigParser\Config.csproj" />
     <ProjectReference Include="..\LogParser\LogParser.csproj" />
   </ItemGroup>
 
