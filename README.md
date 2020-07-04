@@ -18,6 +18,8 @@ When running the application without passing a `log.txt` file argument, the foll
 
 If running the application with a `d3dx.ini` path (or with a `log.txt` path from the original FrameAnalysis folder it was dumped into), the application will scrape these files for Shader and Asset names to associate with hashes read from the frame analysis.
 
+This can be refreshed with the `get-metadata` function in `manual` mode.
+
 ### Auto Conversion (`Auto` mode)
 
 The tool can convert logs as they are generated automatically. This requires providing the `d3dx.ini` file path for your game.
@@ -40,7 +42,7 @@ Messages may also appear for API calls that are supported, but the majority of t
 
 Please raise an issue if something is missing that seems useful.
 
-#### Generate simplified Frame Analysis CSV (`Log` and `Set-Columns` functions)
+#### Generate simplified Frame Analysis CSV (`Log`, `Set-Columns` and `Get-Metadata` functions)
 
 It is possible to customise the columns output by the program.
 
@@ -66,6 +68,8 @@ The following column ids are valid:
 - `Logic` : 3Dmigoto logic trace (for `ShaderOverride`s etc.), split into Pre and Post
 
 The default configuration is equivalent to `All VS PS`.
+
+If you wish to reload the metadata while operating in `Manual` mode, the function `get-metadata` can be used.
 
 Frame number will only be listed if more than one exists in the log (when using `analyse_options = hold`).
 
