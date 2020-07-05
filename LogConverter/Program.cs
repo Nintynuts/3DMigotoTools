@@ -63,7 +63,7 @@ namespace Migoto.Log.Converter
 
         private static bool GetD3DXPath(ref string d3dxPath)
         {
-            return ui.GetFile(MigotoData.D3DX, ref d3dxPath);
+            return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, ref d3dxPath);
         }
 
         private static void WatchFolder(string inputFilePath)
@@ -76,7 +76,7 @@ namespace Migoto.Log.Converter
 
         private static bool GetValidLog(ref string path)
         {
-            return ui.GetFile("frame analysis log file (log.txt)", ref path)
+            return ui.GetFile("frame analysis log file (log.txt)", ".txt", ref path)
                     && loadedData.LoadLog(path, ui.Event);
         }
 

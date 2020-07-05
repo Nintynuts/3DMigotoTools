@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Timers;
 
 namespace Migoto.Log.Converter
@@ -10,7 +11,9 @@ namespace Migoto.Log.Converter
     {
         bool GetInfo(string prompt, out string info);
 
-        bool GetFile(string prompt, ref string file);
+        bool GetFile(string prompt, string ext, ref string file);
+
+        bool GetValid(string prompt, ref string result, Func<string, (bool valid, string msg, string corrected)> validator);
 
         void Event(string message);
 
@@ -51,31 +54,67 @@ namespace Migoto.Log.Converter
 
         private void Hint(string msg = null)
         {
-            var currentColumn = CursorLeft;
-            WriteLine();
+            var left = CursorLeft;
+            var top = CursorTop;
+            WriteLine(); // Move to next line
             if (msg != null && hintMessage != null && msg != hintMessage)
-                SetCursorPosition(hintMessage.Length + 1, CursorTop);
+                CursorLeft = hintMessage.Length + 1;
             var newMsg = msg ?? EmptyLine;
             Write(newMsg);
-            SetCursorPosition(currentColumn, CursorTop - 1);
+            WriteLine(EmptyLine); // Clear current line after hint
+            Write(EmptyLine); // Clear following line (in case hint moved up)
+            SetCursorPosition(left, top);
             hintMessage = msg;
         }
 
-        private bool Request(string message, ref string result, ref int curIndex, bool skipPrompt)
+        private bool Request(string message, ref string result)
         {
-            if (!skipPrompt)
+            int index = 0;
+            string text = result;
+            ClearLine();
+            Status($"Please enter {message}:");
+            if (text != "")
             {
-                Status($"Please enter {message}:");
-                if (result != "")
+                printRemaining();
+                OffsetCursor(text.Length);
+            }
+            Hint("Press Escape to cancel");
+
+            index = result.Length;
+
+            void printRemaining()
+            {
+                CursorVisible = false;
+                var left = CursorLeft;
+                var top = CursorTop;
+                Write(text.Substring(index));
+                Write(EmptyLine); // Overwrite hint if overflow to new line
+                Hint(hintMessage); // Reprint hint
+                SetCursorPosition(left, top);
+                CursorVisible = true;
+            }
+
+            void RemoveChar()
+            {
+                text = text.Remove(index, 1);
+                printRemaining();
+            }
+
+            bool OffsetCursor(int offset)
+            {
+                var newIdx = index + offset;
+                if (newIdx < 0 || newIdx > text.Length)
+                    return false;
+                index = newIdx;
+                var left = (offset + CursorLeft) % WindowWidth;
+                CursorTop += (offset + CursorLeft) / WindowWidth;
+                if (left < 0)
                 {
-                    //int right = WindowWidth - CursorLeft;
-                    var toPrint = result;
-                    //if (toPrint.Length > right)
-                    //    toPrint = ".." + toPrint.Substring(toPrint.IndexOf("\\", toPrint.Length - (right - 2)));
-                    Write(toPrint);
-                    curIndex = toPrint.Length;
+                    left += WindowWidth;
+                    CursorTop--;
                 }
-                Hint("Press Escape to cancel");
+                CursorLeft = left;
+                return true;
             }
 
             CursorVisible = true;
@@ -84,29 +123,43 @@ namespace Migoto.Log.Converter
             {
                 switch (stroke.Key)
                 {
+                    case ConsoleKey.LeftArrow:
+                        OffsetCursor(-1); break;
+                    case ConsoleKey.RightArrow:
+                        OffsetCursor(1); break;
+                    case ConsoleKey.Home:
+                        OffsetCursor(-index); break;
+                    case ConsoleKey.End:
+                        OffsetCursor(text.Length - index); break;
                     case ConsoleKey.Backspace:
-                        if (curIndex > 0)
-                        {
-                            result = result.Remove(result.Length - 1);
-                            Write(stroke.KeyChar);
-                            Write(' ');
-                            Write(stroke.KeyChar);
-                            curIndex--;
-                        }
+                        if (OffsetCursor(-1))
+                            RemoveChar();
+                        break;
+                    case ConsoleKey.Delete:
+                        if (index < text.Length)
+                            RemoveChar();
                         break;
                     default:
                         if (!char.IsControl(stroke.KeyChar))
                         {
-                            result += stroke.KeyChar;
+                            text = text.Insert(index, $"{stroke.KeyChar}");
+                            var atEnd = CursorLeft == WindowWidth - 1;
                             Write(stroke.Key == ConsoleKey.Spacebar ? nbsp : stroke.KeyChar);
-                            curIndex++;
+                            if (atEnd)
+                            {
+                                CursorTop += 1;
+                                CursorLeft = 0;
+                            }
+                            index++;
+                            printRemaining();
                         }
                         break;
                 }
                 stroke = ReadKey(true);
             }
-            curIndex = result.Length;
-            Hint();
+            OffsetCursor(text.Length - index); // Put cursor to end
+            Hint(); // Clear hint
+            result = text;
             return stroke.Key != ConsoleKey.Escape;
         }
 
@@ -128,29 +181,39 @@ namespace Migoto.Log.Converter
 
         public bool GetInfo(string message, out string result)
         {
-            int curIndex = 0;
             result = "";
-            return Request(message, ref result, ref curIndex, false);
+            return Request(message, ref result);
         }
 
-        public bool GetFile(string prompt, ref string path)
+        public bool GetValid(string prompt, ref string result, Func<string, (bool valid, string msg, string corrected)> validator)
         {
             ClearLine();
             bool checkedInput = false;
-            int curIndex = 0;
-            while ((path != "" && !checkedInput) || Request($"path of {prompt}", ref path, ref curIndex, curIndex > 0))
+            while ((result != "" && !checkedInput) || Request(prompt, ref result))
             {
-                path = path.Replace("\"", "").Trim();
-                if (File.Exists(path))
+                var (valid, msg, corrected) = validator(result);
+                result = corrected;
+                if (valid)
                 {
                     Hint();
                     return true;
                 }
+                Hint($"{msg}, please try again.");
                 checkedInput = true;
-                Hint("File doesn't exist, please try again.");
             }
-            path = null;
+            result = null;
             return false;
+        }
+
+        public bool GetFile(string prompt, string ext, ref string path)
+        {
+            var illegal = new Regex("[\"*/<>?|]");
+            return GetValid($"path of {prompt}", ref path, result =>
+            {
+                result = illegal.Replace(result, "").Trim();
+                var msg = !File.Exists(result) ? "File doesn't exist" : !result.EndsWith(ext) ? "File has wrong extension" : null;
+                return (msg == null, msg, result);
+            });
         }
 
         public void WaitForCancel(string message)

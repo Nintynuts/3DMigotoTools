@@ -50,49 +50,41 @@ namespace Migoto.Log.Converter
 
         public bool GetColumnSelection(IEnumerable<string> cmdColumns = null)
         {
-            IEnumerable<string> columnSelection;
             ColumnGroups = DrawCallColumns.Index;
             ShaderColumns = new List<(ShaderType type, ShaderColumns columns)>();
-            if (cmdColumns?.Any() == true)
+
+            string initial = cmdColumns.Delimit(' ');
+
+            return ui.GetValid("column selection (default: IA VS PS OM Logic)", ref initial, columnStr =>
             {
-                columnSelection = cmdColumns;
-            }
-            else
-            {
-                if (!ui.GetInfo("column selection (default: VB IB VS PS OM Logic)", out var result))
+                var columnSelection = columnStr.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                if (columnSelection.Count() == 1 && columnSelection.First() == string.Empty)
+                    columnSelection.AddRange(new[] { "All", "VS", "PS" });
+
+                foreach (var column in columnSelection)
                 {
-                    ui.Event("Export Log aborted");
-                    return false;
+                    try
+                    {
+                        var token = column.ToUpper();
+                        var tokens = token.Split('-');
+                        if (tokens.Length > 1)
+                            ShaderColumns.Add((ShaderTypes.FromLetter[tokens[0][0]], Enums.Parse<ShaderColumns>(tokens[1])));
+                        else if (token.Last() == 'S')
+                            ShaderColumns.Add((ShaderTypes.FromLetter[token[0]], Converter.ShaderColumns.All));
+                        else
+                            ColumnGroups |= Enums.Parse<DrawCallColumns>(column);
+                    }
+                    catch
+                    {
+                        return (false, $"Failed to parse column: '{column}'", columnStr.Replace(column, "").Replace("  ", " "));
+                    }
                 }
-                columnSelection = result.Split(' ');
-            }
 
-            if (columnSelection.Count() == 1 && columnSelection.First() == string.Empty)
-                columnSelection = new[] { "All", "VS", "PS" };
-
-            foreach (var column in columnSelection)
-            {
-                try
-                {
-                    var token = column.ToUpper();
-                    var tokens = token.Split('-');
-                    if (tokens.Length > 1)
-                        ShaderColumns.Add((ShaderTypes.FromLetter[tokens[0][0]], Enums.Parse<ShaderColumns>(tokens[1])));
-                    else if (token.Last() == 'S')
-                        ShaderColumns.Add((ShaderTypes.FromLetter[token[0]], Converter.ShaderColumns.All));
-                    else
-                        ColumnGroups |= Enums.Parse<DrawCallColumns>(column);
-                }
-                catch
-                {
-                    ui.Event($"Failed to parse column: {column}");
-                }
-            }
-
-            // Consolidate duplicate entries, just in case!
-            ShaderColumns = ShaderColumns.GroupBy(s => s.type).Select(s => (s.Key, s.Select(c => c.columns).Aggregate((a, b) => a | b))).ToList();
-
-            return true;
+                // Consolidate duplicate entries, just in case!
+                ShaderColumns = ShaderColumns.GroupBy(s => s.type).Select(s => (s.Key, s.Select(c => c.columns).Aggregate((a, b) => a | b))).ToList();
+                return (true, "", columnStr);
+            });
         }
 
         public void GetMetadata(string rootPath)
