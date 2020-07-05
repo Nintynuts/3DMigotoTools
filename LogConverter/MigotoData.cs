@@ -5,31 +5,33 @@ using System.Linq;
 
 namespace Migoto.Log.Converter
 {
-    using Config;
+    using Migoto.Config;
+    using Migoto.Log.Parser.ApiCalls;
+    using Migoto.ShaderFixes;
     using Parser;
-    using Parser.ApiCalls;
     using Parser.Slots;
-    using ShaderFixes;
 
     public class MigotoData
     {
         public const string D3DX = "d3dx.ini";
-        public DrawCallColumns columns;
-        public List<(ShaderType type, ShaderColumns columns)> shaderColumns;
-        public FrameAnalysis frameAnalysis;
-        public readonly Config config = new Config();
-        public readonly ShaderFixes shaderFixes = new ShaderFixes();
-        public bool metadataLoaded;
+        public DrawCallColumns ColumnGroups { get; private set; }
+        public List<(ShaderType type, ShaderColumns columns)> ShaderColumns { get; private set; }
+        public FrameAnalysis FrameAnalysis { get; private set; }
+        public Config Config { get; } = new Config();
+        public ShaderFixes ShaderFixes { get; } = new ShaderFixes();
+
+        private readonly IUserInterface ui;
+        private bool metadataLoaded;
+
+        internal MigotoData(IUserInterface ui) => this.ui = ui;
 
         public bool LoadLog(string validFilePath, Action<string> logger)
         {
-            StreamReader frameAnalysisFile = null;
-            while (frameAnalysisFile == null)
-                try { frameAnalysisFile = new StreamReader(validFilePath); } catch { }
+            using var frameAnalysisFile = IOHelpers.TryReadFile(validFilePath);
 
-            frameAnalysis = new FrameAnalysis(frameAnalysisFile, logger);
+            FrameAnalysis = new FrameAnalysis(frameAnalysisFile, logger);
 
-            if (!frameAnalysis.Parse())
+            if (!FrameAnalysis.Parse())
             {
                 logger("Provided file is not a 3DMigoto FrameAnalysis log file");
                 return false;
@@ -49,17 +51,17 @@ namespace Migoto.Log.Converter
         public bool GetColumnSelection(IEnumerable<string> cmdColumns = null)
         {
             IEnumerable<string> columnSelection;
-            columns = DrawCallColumns.Index;
-            shaderColumns = new List<(ShaderType type, ShaderColumns columns)>();
+            ColumnGroups = DrawCallColumns.Index;
+            ShaderColumns = new List<(ShaderType type, ShaderColumns columns)>();
             if (cmdColumns?.Any() == true)
             {
                 columnSelection = cmdColumns;
             }
             else
             {
-                if (!ConsoleEx.ReadLineOrEsc("Please enter column selection (default: VB IB VS PS OM Logic): ", out var result))
+                if (!ui.GetInfo("column selection (default: VB IB VS PS OM Logic)", out var result))
                 {
-                    Console.WriteLine("Export Log aborted");
+                    ui.Event("Export Log aborted");
                     return false;
                 }
                 columnSelection = result.Split(' ');
@@ -75,66 +77,64 @@ namespace Migoto.Log.Converter
                     var token = column.ToUpper();
                     var tokens = token.Split('-');
                     if (tokens.Length > 1)
-                        shaderColumns.Add((ShaderTypes.FromLetter[tokens[0][0]], Enums.Parse<ShaderColumns>(tokens[1])));
+                        ShaderColumns.Add((ShaderTypes.FromLetter[tokens[0][0]], Enums.Parse<ShaderColumns>(tokens[1])));
                     else if (token.Last() == 'S')
-                        shaderColumns.Add((ShaderTypes.FromLetter[token[0]], ShaderColumns.All));
+                        ShaderColumns.Add((ShaderTypes.FromLetter[token[0]], Converter.ShaderColumns.All));
                     else
-                        columns |= Enums.Parse<DrawCallColumns>(column);
+                        ColumnGroups |= Enums.Parse<DrawCallColumns>(column);
                 }
                 catch
                 {
-                    Console.WriteLine($"Failed to parse column: {column}");
+                    ui.Event($"Failed to parse column: {column}");
                 }
             }
 
             // Consolidate duplicate entries, just in case!
-            shaderColumns = shaderColumns.GroupBy(s => s.type).Select(s => (s.Key, s.Select(c => c.columns).Aggregate((a, b) => a | b))).ToList();
+            ShaderColumns = ShaderColumns.GroupBy(s => s.type).Select(s => (s.Key, s.Select(c => c.columns).Aggregate((a, b) => a | b))).ToList();
 
             return true;
         }
 
         public void GetMetadata(string rootPath)
         {
-            Console.Write("Reading metadata from ini config files...");
-            config.Read(Path.Combine(rootPath, D3DX));
-            ConsoleEx.ClearLine();
-            Console.WriteLine($"TextureOverrides: {config.TextureOverrides.Count}\nShaderOverrides: {config.ShaderOverrides.Count}");
-            Console.Write("Reading metadata from shader fixes...");
-            shaderFixes.Scrape(rootPath);
-            ConsoleEx.ClearLine();
-            Console.WriteLine($"Shaders: {shaderFixes.ShaderNames.Count}\nTexture Registers: {shaderFixes.Textures.Count}\nConstant Buffer Registers {shaderFixes.ConstantBuffers.Count}");
+            ui.Status("Reading metadata from ini config files...");
+            Config.Read(Path.Combine(rootPath, D3DX));
+            ui.Event($"TextureOverrides: {Config.TextureOverrides.Count}\nShaderOverrides: {Config.ShaderOverrides.Count}");
+            ui.Status("Reading metadata from shader fixes...");
+            ShaderFixes.Scrape(rootPath);
+            ui.Event($"Shaders: {ShaderFixes.ShaderNames.Count}\nTexture Registers: {ShaderFixes.Textures.Count}\nConstant Buffer Registers {ShaderFixes.ConstantBuffers.Count}");
             metadataLoaded = true;
         }
 
         public void LinkOverrides()
         {
-            config.TextureOverrides.ForEach(to =>
+            Config.TextureOverrides.ForEach(to =>
             {
-                if (frameAnalysis.Assets.TryGetValue(to.Hash, out var asset))
+                if (FrameAnalysis.Assets.TryGetValue(to.Hash, out var asset))
                     asset.Override = to;
             });
-            config.ShaderOverrides.ForEach(so =>
+            Config.ShaderOverrides.ForEach(so =>
             {
-                if (frameAnalysis.Shaders.TryGetValue(so.Hash, out var shader))
+                if (FrameAnalysis.Shaders.TryGetValue(so.Hash, out var shader))
                     shader.Override = so;
             });
         }
 
         public void LinkShaderFixes()
         {
-            shaderFixes.ShaderNames.ForEach(sf =>
+            ShaderFixes.ShaderNames.ForEach(sf =>
             {
-                if (frameAnalysis.Shaders.TryGetValue(sf.Hash, out var shader))
+                if (FrameAnalysis.Shaders.TryGetValue(sf.Hash, out var shader))
                     shader.Fix = sf;
             });
-            LinkRegisters(shaderFixes.Textures, s => s.SetShaderResources?.ResourceViews);
-            LinkRegisters(shaderFixes.ConstantBuffers, s => s.SetConstantBuffers?.ConstantBuffers);
+            LinkRegisters(ShaderFixes.Textures, s => s.SetShaderResources?.ResourceViews);
+            LinkRegisters(ShaderFixes.ConstantBuffers, s => s.SetConstantBuffers?.ConstantBuffers);
         }
 
         private void LinkRegisters(List<ShaderUsage<Register>> registers, Func<ShaderContext, IEnumerable<IResourceSlot>> resourceSelector)
         {
             registers
-            .ForEach(reg => reg.Hashes.Select(hash => frameAnalysis.Shaders.TryGetValue(hash, out var shader) ? shader : null).ExceptNull()
+            .ForEach(reg => reg.Hashes.Select(hash => FrameAnalysis.Shaders.TryGetValue(hash, out var shader) ? shader : null).ExceptNull()
             .ForEach(s => s.Contexts.Select(c => resourceSelector(c)?.FirstOrDefault(r => r.Index == reg.Thing.Index)?.Asset).Distinct().ExceptNull()
             .ForEach(a =>
             {

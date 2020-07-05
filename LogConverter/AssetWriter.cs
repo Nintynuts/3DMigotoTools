@@ -33,7 +33,6 @@ namespace Migoto.Log.Converter
             output.WriteLine();
             output.WriteLine(columns.Headers());
             asset.LifeCycle.ForEach(dc => output.WriteLine(columns.Values(dc)));
-            output.Close();
         }
 
         private static DrawCall GetLastUser(Asset asset, IApiCall dc)

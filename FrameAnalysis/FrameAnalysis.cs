@@ -56,7 +56,7 @@ namespace Migoto.Log.Parser
         public bool Parse()
         {
             var header = stream.ReadLine();
-            if (!header.StartsWith("analyse_options"))
+            if (header?.StartsWith("analyse_options") != true)
                 return false;
 
             var line = 2;

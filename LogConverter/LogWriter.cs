@@ -104,19 +104,20 @@ namespace Migoto.Log.Converter
                 => number?.ToString() ?? "?";
         }
 
-        public static StreamWriter GetOutputFileFrom(string inputFilePath)
+        public static string GetOutputFileFrom(string inputFilePath)
         {
             Regex frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
             if (frameAnalysisPattern.IsMatch(inputFilePath))
                 inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
-            var outputFilePath = inputFilePath.Replace(".txt", ".csv");
-
-            var outputCsv = IOHelpers.TryOpenFile(outputFilePath);
-            return outputCsv;
+            return inputFilePath.Replace(".txt", ".csv");
         }
 
-        public static void Write(List<Frame> frames, StreamWriter output, DrawCallColumns columnGroups, IEnumerable<(ShaderType type, ShaderColumns columns)> shaders)
+        public static void Write(MigotoData data, StreamWriter output)
         {
+            var frames = data.FrameAnalysis.Frames;
+            var columnGroups = data.ColumnGroups;
+            var shaderColumns = data.ShaderColumns;
+
             var logicSplit = new Regex(@"(?<! )(?=post)");
 
             var columns = new List<IColumns>();
@@ -159,7 +160,7 @@ namespace Migoto.Log.Converter
                     yield return new AssetColumnSet($"{x}s-t", dc => dc.Shader(shaderType).SetShaderResources, SetShaderResources.UsedSlots.GetOrAdd(shaderType));
             }
 
-            columns.AddRange(shaders.OrderBy(s => s.type).SelectMany(GetShaderColumns));
+            columns.AddRange(shaderColumns.OrderBy(s => s.type).SelectMany(GetShaderColumns));
 
             if (columnGroups.HasFlag(DrawCallColumns.RT))
                 columns.Add(new AssetColumnSet("o", dc => dc.SetRenderTargets, OMSetRenderTargets.UsedSlots));
@@ -172,7 +173,6 @@ namespace Migoto.Log.Converter
 
             output.WriteLine($"{columns.Headers()}");
             frames.ForEach(frame => frame.DrawCalls.ForEach(drawCall => output.WriteLine($"{columns.Values(drawCall)}")));
-            output.Close();
         }
     }
 }

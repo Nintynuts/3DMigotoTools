@@ -1,18 +1,17 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace Migoto.Log.Converter
 {
     class AutoConverter
     {
         private readonly MigotoData data;
-        private readonly Action<string> logger;
+        private readonly IUserInterface ui;
         private readonly FileSystemWatcher watcher;
 
-        public AutoConverter(string rootFolder, MigotoData data, Action<string> logger)
+        public AutoConverter(string rootFolder, MigotoData data, IUserInterface ui)
         {
             this.data = data;
-            this.logger = logger;
+            this.ui = ui;
             watcher = new FileSystemWatcher(rootFolder, "FrameAnalysis-*")
             {
                 NotifyFilter = NotifyFilters.DirectoryName,
@@ -30,13 +29,20 @@ namespace Migoto.Log.Converter
         private void Created(object sender, FileSystemEventArgs e)
         {
             string inputFilePath = Path.Combine(e.FullPath, "log.txt");
+            string outputFilePath = LogWriter.GetOutputFileFrom(inputFilePath);
+            string logFilePath = Path.Combine(e.FullPath, "3DMT-log.txt");
 
-            using var loggingFile = new StreamWriter(Path.Combine(e.FullPath, "3DMT-log.txt"));
-            data.LoadLog(inputFilePath, msg => loggingFile.WriteLine(msg));
-            loggingFile.Close();
-
-            LogWriter.Write(data.frameAnalysis.Frames, LogWriter.GetOutputFileFrom(inputFilePath), data.columns, data.shaderColumns);
-            logger($"Log converted: {e.Name}");
+            using var loggingFile = new StreamWriter(logFilePath);
+            if (data.LoadLog(inputFilePath, msg => loggingFile.WriteLine(msg)))
+            {
+                using var output = IOHelpers.TryWriteFile(outputFilePath, ui);
+                LogWriter.Write(data, output);
+                ui.Event($"Conversion success: {e.Name}");
+            }
+            else
+            {
+                ui.Event($"Conversion failure: {e.Name}");
+            }
         }
     }
 }
