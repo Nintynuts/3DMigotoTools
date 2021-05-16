@@ -113,7 +113,18 @@ namespace Migoto.Log.Converter
         {
             while (ui.GetInfo("a resource hash to dump lifecycle for", out var hex))
             {
-                var hash = uint.Parse(hex, NumberStyles.HexNumber);
+                uint hash;
+                try
+                {
+                    if (hex.Length != 8)
+                        throw new InvalidDataException(nameof(hex));
+                    hash = uint.Parse(hex, NumberStyles.HexNumber);
+                }
+                catch
+                {
+                    ui.Event($"Invalid hash: {hex} (must be 8 chars, alphanumetic hex)");
+                    continue;
+                }
 
                 if (frameAnalysis.Assets.TryGetValue(hash, out var asset))
                 {
@@ -132,7 +143,7 @@ namespace Migoto.Log.Converter
                 }
                 else
                 {
-                    ui.Event("Hash not found");
+                    ui.Event($"Hash not found: {hex}");
                 }
             }
             ui.Event("Export Asset aborted");
