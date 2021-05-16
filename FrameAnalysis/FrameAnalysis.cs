@@ -150,15 +150,24 @@ namespace Migoto.Log.Parser
 
         private void ProcessFrameAndDrawCall(GroupCollection captures)
         {
-            if (captures["frame"].Success && uint.TryParse(captures["frame"].Value, out var thisFrameNo) && thisFrameNo != frameNo)
+            if (uint.TryParse(captures["drawcall"].Value, out var thisDrawCallNo))
             {
-                LogUnhandledForFrame();
-                frameNo = thisFrameNo;
-                frame = new Frame(thisFrameNo);
-                drawCall = null; // sever fallback to previous frame
-                Frames.Add(frame);
+                if (captures["frame"].Success && uint.TryParse(captures["frame"].Value, out var thisFrameNo) && thisFrameNo != frameNo)
+                {
+                    LogUnhandledForFrame();
+                    frameNo = thisFrameNo;
+                    frame = new Frame(thisFrameNo);
+                    Frames.Add(frame);
+                    // New frame must be new draw call, but for some reason 3Dmigoto doesn't increment the draw call number
+                    InitNewDrawCall(thisDrawCallNo);
+                }
+                else if (thisDrawCallNo != drawCallNo)
+                {
+                    InitNewDrawCall(thisDrawCallNo);
+                }
             }
-            if (uint.TryParse(captures["drawcall"].Value, out var thisDrawCallNo) && thisDrawCallNo != drawCallNo)
+
+            void InitNewDrawCall(uint thisDrawCallNo)
             {
                 if (drawCall != null)
                     LogUnhandledForDrawCall();
@@ -255,7 +264,7 @@ namespace Migoto.Log.Parser
                 return;
             }
 
-            Type apiCallType = apiCall.GetType();
+            var apiCallType = apiCall.GetType();
             PropertyInfo slots;
             Type slotType;
 
