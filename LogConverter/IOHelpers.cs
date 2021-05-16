@@ -9,7 +9,12 @@ namespace Migoto.Log.Converter
         {
             StreamWriter writer = null;
             do
-                try { writer = new StreamWriter(fileName); } catch (IOException) { AlertOrWait(fileName, ui); }
+                try
+                {
+                    var stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+                    writer = new StreamWriter(stream);
+                }
+                catch (IOException) { AlertOrWait(fileName, ui); }
             while (writer == null && ui?.WaitForContinue() != false);
             return writer;
         }
@@ -18,7 +23,12 @@ namespace Migoto.Log.Converter
         {
             StreamReader reader = null;
             do
-                try { reader = new StreamReader(fileName); } catch (IOException) { AlertOrWait(fileName, ui); }
+                try
+                {
+                    var stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+                    reader = new StreamReader(stream);
+                }
+                catch (IOException) { AlertOrWait(fileName, ui); }
             while (reader == null && ui?.WaitForContinue() != false);
             return reader;
         }
