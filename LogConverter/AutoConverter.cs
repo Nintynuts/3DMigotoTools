@@ -32,17 +32,15 @@ namespace Migoto.Log.Converter
             string outputFilePath = LogWriter.GetOutputFileFrom(inputFilePath);
             string logFilePath = Path.Combine(e.FullPath, "3DMT-log.txt");
 
-            using var loggingFile = new StreamWriter(logFilePath);
-            if (data.LoadLog(inputFilePath, msg => loggingFile.WriteLine(msg)))
+            using var logging = IOHelpers.TryWriteFile(logFilePath, ui);
+            using var output = IOHelpers.TryWriteFile(outputFilePath, ui);
+            if (output != null && logging != null && data.LoadLog(inputFilePath, msg => logging.WriteLine(msg)))
             {
-                using var output = IOHelpers.TryWriteFile(outputFilePath, ui);
                 LogWriter.Write(data, output);
                 ui.Event($"Conversion success: {e.Name}");
+                return;
             }
-            else
-            {
-                ui.Event($"Conversion failure: {e.Name}");
-            }
+            ui.Event($"Conversion failure: {e.Name}");
         }
     }
 }

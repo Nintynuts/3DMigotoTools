@@ -33,12 +33,13 @@ namespace Migoto.Log.Parser.Assets
             => Uses.OfType<IResourceSlot>().GroupBy(s => s.Index).OrderBy(g => g.Key).Select(g => (index: g.Key, slots: g.ToList())).ToList();
 
         public List<IApiCall> LifeCycle
-            => Uses.Select(s => s.Owner).OrderBy(dc => dc.Owner.Owner.Index).ThenBy(dc => dc.Owner.Index).ThenBy(dc => dc.Order).ToList();
+            => Uses.Select(s => s.Owner).ExceptNull().OrderBy(dc => dc.Owner?.Owner?.Index).ThenBy(dc => dc.Owner?.Index).ThenBy(dc => dc.Order).ToList();
 
-        public TextureOverride Override { get; set; }
+        public TextureOverride? Override { get; set; }
+
         public List<Register> VariableNames { get; } = new List<Register>();
 
-        public string GetName(IApiCall apiCall, int slot)
+        public string GetName(IApiCall? apiCall, int slot)
         {
             return Override?.FriendlyName
                 ?? (apiCall is IShaderCall ? GetNameForSlot(slot) : null)
@@ -47,11 +48,9 @@ namespace Migoto.Log.Parser.Assets
 
         private string CommonName => VariableNames.Select(v => v.Name).GroupBy(v => v).OrderByDescending(g => g.Count()).First().Key;
 
-        public string GetNameForSlot(int slot)
+        public string? GetNameForSlot(int slot)
         {
-            if (VariableNames.Any(v => v.Index == slot))
-                return VariableNames.First(v => v.Index == slot).Name;
-            return null;
+            return VariableNames.Any(v => v.Index == slot) ? VariableNames.First(v => v.Index == slot).Name : null;
         }
     }
 }

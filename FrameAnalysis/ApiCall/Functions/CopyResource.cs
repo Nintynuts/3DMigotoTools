@@ -7,7 +7,7 @@
         public ulong pDstResource { get; set; }
         public ulong pSrcResource { get; set; }
 
-        public Slots.Resource Src { get; set; }
-        public Slots.Resource Dst { get; set; }
+        public Slots.Resource? Src { get; set; }
+        public Slots.Resource? Dst { get; set; }
     }
 }

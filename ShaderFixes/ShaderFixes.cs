@@ -72,27 +72,27 @@ namespace Migoto.ShaderFixes
             includes.AddRange(includePattern.Matches(shader).Select(m => new ShaderUsage<string>(m.Groups["path"].Value, hashes)));
             reader.Close();
 
-            ReadRegisters(ConstantBuffers, constantBufferPattern, shader, hashes);
-            ReadRegisters(Textures, textureMacroPattern, shader, hashes);
-            ReadRegisters(Textures, texturePattern, shader, hashes);
-        }
+            ReadRegisters(ConstantBuffers, constantBufferPattern);
+            ReadRegisters(Textures, textureMacroPattern);
+            ReadRegisters(Textures, texturePattern);
 
-        private void ReadRegisters(List<ShaderUsage<Register>> registers, Regex pattern, string hlsl, IEnumerable<ulong> hashes)
-        {
-            registers.AddRange(pattern.Matches(hlsl).Select(m => new ShaderUsage<Register>(new Register
+            void ReadRegisters(List<ShaderUsage<Register>> registers, Regex pattern)
             {
-                Index = int.Parse(m.Groups["slot"].Value),
-                Name = m.Groups["name"].Value + GetType(m)
-            }, hashes)));
+                registers.AddRange(pattern.Matches(shader).Select(m => new ShaderUsage<Register>(new Register
+                {
+                    Index = int.Parse(m.Groups["slot"].Value),
+                    Name = m.Groups["name"].Value + GetType(m)
+                }, hashes)));
 
-            static string GetType(Match m)
-            {
-                var type = m.Groups.FirstOrDefault(g => g.Name == "type");
-                return type != null ? $" ({type.Value})" : "";
+                static string GetType(Match m)
+                {
+                    var type = m.Groups.Cast<Group>().FirstOrDefault(g => g.Name == "type");
+                    return type != null ? $" ({type.Value})" : "";
+                }
             }
         }
 
-        private List<ShaderUsage<T>> Consolidate<T>(IEnumerable<ShaderUsage<T>> things)
+        private static List<ShaderUsage<T>> Consolidate<T>(IEnumerable<ShaderUsage<T>> things)
             => things.GroupBy(t => t.Thing).Select(t => new ShaderUsage<T>(t.Key, t.SelectMany(x => x.Hashes).ToArray())).ToList();
     }
 }

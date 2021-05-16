@@ -6,8 +6,8 @@
     {
         protected Clear(uint order) : base(order) { }
 
-        public ResourceView Target { get; set; }
+        public ResourceView? Target { get; set; }
 
-        IResource ISingleSlot.Slot => Target;
+        IResource? ISingleSlot.Slot => Target;
     }
 }

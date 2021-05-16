@@ -16,6 +16,6 @@ namespace Migoto.Log.Parser.ApiCalls
 
         public override List<int> GlobalSlotsMask => UsedSlots;
 
-        protected override Deferred<DrawCall, DrawCall> PreviousDeferred => Owner.Fallback.Deferred;
+        protected override Deferred<DrawCall, DrawCall>? PreviousDeferred => Owner?.Fallback?.Deferred;
     }
 }

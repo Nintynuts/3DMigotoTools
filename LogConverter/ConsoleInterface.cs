@@ -11,9 +11,9 @@ namespace Migoto.Log.Converter
     {
         bool GetInfo(string prompt, out string info);
 
-        bool GetFile(string prompt, string ext, ref string file);
+        bool GetFile(string prompt, string ext, string? initial, out string file);
 
-        bool GetValid(string prompt, ref string result, Func<string, (bool valid, string msg, string corrected)> validator);
+        bool GetValid(string prompt, string? initial, out string result, Func<string, (bool valid, string? msg, string corrected)> validator);
 
         void Event(string message);
 
@@ -30,15 +30,15 @@ namespace Migoto.Log.Converter
         private int waitCycle;
         private const char nbsp = ' ';
         private int statusLine = 0;
-        private static string hintMessage;
+        private static string? hintMessage;
 
         public ConsoleInterface()
         {
         }
 
-        private string EmptyLine => new string(' ', WindowWidth - CursorLeft);
+        private static string EmptyLine => new string(' ', WindowWidth - CursorLeft);
 
-        private bool ReadAnythingExceptEsc => ReadKey(true).Key != ConsoleKey.Escape;
+        private static bool ReadAnythingExceptEsc => ReadKey(true).Key != ConsoleKey.Escape;
 
         private void ClearLine()
         {
@@ -52,7 +52,7 @@ namespace Migoto.Log.Converter
             SetCursorPosition(0, statusLine);
         }
 
-        private void Hint(string msg = null)
+        private static void Hint(string? msg = null)
         {
             var left = CursorLeft;
             var top = CursorTop;
@@ -67,10 +67,10 @@ namespace Migoto.Log.Converter
             hintMessage = msg;
         }
 
-        private bool Request(string message, ref string result)
+        private bool Request(string message, string? initial, out string result)
         {
             int index = 0;
-            string text = result;
+            string text = initial ?? string.Empty;
             ClearLine();
             Status($"Please enter {message}:");
             if (text != "")
@@ -80,14 +80,14 @@ namespace Migoto.Log.Converter
             }
             Hint("Press Escape to cancel");
 
-            index = result.Length;
+            index = text.Length;
 
             void printRemaining()
             {
                 CursorVisible = false;
                 var left = CursorLeft;
                 var top = CursorTop;
-                Write(text.Substring(index));
+                Write(text[index..]);
                 Write(EmptyLine); // Overwrite hint if overflow to new line
                 Hint(hintMessage); // Reprint hint
                 SetCursorPosition(left, top);
@@ -119,7 +119,7 @@ namespace Migoto.Log.Converter
 
             CursorVisible = true;
             var stroke = ReadKey(true);
-            while (stroke.Key != ConsoleKey.Escape && stroke.Key != ConsoleKey.Enter)
+            while (stroke.Key is not ConsoleKey.Escape and not ConsoleKey.Enter)
             {
                 switch (stroke.Key)
                 {
@@ -181,15 +181,14 @@ namespace Migoto.Log.Converter
 
         public bool GetInfo(string message, out string result)
         {
-            result = "";
-            return Request(message, ref result);
+            return Request(message, null, out result);
         }
 
-        public bool GetValid(string prompt, ref string result, Func<string, (bool valid, string msg, string corrected)> validator)
+        public bool GetValid(string prompt, string? initial, out string result, Func<string, (bool valid, string? msg, string corrected)> validator)
         {
             ClearLine();
             bool checkedInput = false;
-            while ((result != "" && !checkedInput) || Request(prompt, ref result))
+            while ((initial != null && (result = initial) != null && !checkedInput) || Request(prompt, initial, out result))
             {
                 var (valid, msg, corrected) = validator(result);
                 result = corrected;
@@ -201,18 +200,17 @@ namespace Migoto.Log.Converter
                 Hint($"{msg}, please try again.");
                 checkedInput = true;
             }
-            result = null;
             return false;
         }
 
-        public bool GetFile(string prompt, string ext, ref string path)
+        public bool GetFile(string prompt, string ext, string? initial, out string path)
         {
             var illegal = new Regex("[\"*/<>?|]");
-            return GetValid($"path of {prompt}", ref path, result =>
+            return GetValid($"path of {prompt}", initial, out path, result =>
             {
                 result = illegal.Replace(result, "").Trim();
                 var msg = !File.Exists(result) ? "File doesn't exist" : !result.EndsWith(ext) ? "File has wrong extension" : null;
-                return (msg == null, msg, result);
+                return (msg == null, msg!, result);
             });
         }
 

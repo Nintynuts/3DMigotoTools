@@ -10,6 +10,6 @@
         public ulong ppClassInstances { get; set; }
         public uint NumClassInstances { get; set; }
 
-        public Shader Shader { get; set; }
+        public Shader? Shader { get; set; }
     }
 }

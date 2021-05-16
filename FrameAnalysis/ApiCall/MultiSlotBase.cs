@@ -13,8 +13,8 @@ namespace Migoto.Log.Parser.ApiCalls
 
         uint StartSlot { get; }
         uint NumSlots { get; }
-        ulong Pointer { get;  }
-        List<ulong> PointersMerged { get; }
+        ulong Pointer { get; }
+        List<ulong>? PointersMerged { get; }
     }
 
     public abstract class MultiSlotBase<This, TSlot, TSlotOwner, TOwner, TFallback> : IOwned<TOwner>, IOverriden<TOwner>, IMergable<This>, IMultiSlot, INamed
@@ -26,8 +26,8 @@ namespace Migoto.Log.Parser.ApiCalls
     {
         private readonly List<string> mergeWarnings = new List<string>();
 
-        private List<int> slotsMask;
-        private List<TSlot> slotsSet;
+        private List<int>? slotsMask;
+        private List<TSlot>? slotsSet;
 
         protected MultiSlotBase()
         {
@@ -42,8 +42,8 @@ namespace Migoto.Log.Parser.ApiCalls
         protected ulong Pointer { get; set; }
         ulong IMultiSlot.Pointer => Pointer;
 
-        public List<ulong> PointersMerged { get; protected set; }
-        List<ulong> IMultiSlot.PointersMerged => PointersMerged;
+        public List<ulong>? PointersMerged { get; protected set; }
+        List<ulong>? IMultiSlot.PointersMerged => PointersMerged;
 
         protected ICollection<TSlot> SlotsPopulated { get; }
 
@@ -51,26 +51,26 @@ namespace Migoto.Log.Parser.ApiCalls
             => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).ToList();
 
         protected List<TSlot> SlotsSet
-            => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ToList();
+            => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ExceptNull().ToList();
 
         public abstract List<int> GlobalSlotsMask { get; }
 
-        protected abstract Deferred<TFallback, TOwner> PreviousDeferred { get; }
+        protected abstract Deferred<TFallback, TOwner>? PreviousDeferred { get; }
 
         IEnumerable<IResourceSlot> IMultiSlot.Slots => SlotsSet.Cast<IResourceSlot>();
 
-        public TOwner Owner { get; private set; }
+        public TOwner? Owner { get; private set; }
 
-        public void SetOwner(TOwner newOwner) => Owner = newOwner;
+        public void SetOwner(TOwner? newOwner) => Owner = newOwner;
 
-        public TOwner LastUser { get; private set; }
+        public TOwner? LastUser { get; private set; }
 
         public void SetLastUser(TOwner lastUser) => LastUser = lastUser;
 
-        private TSlot GetSlot(int index)
+        private TSlot? GetSlot(int index)
             => SlotsMask.Contains(index) ? SlotsPopulated.FirstOrDefault(s => s.Index == index) : GetPrevious(index);
 
-        private TSlot GetPrevious(int index)
+        private TSlot? GetPrevious(int index)
         {
             var slot = PreviousDeferred?.OfType<This>().FirstOrDefault()?.SlotsSet.Find(s => s?.Index == index);
             slot?.SetLastUser((This)this);

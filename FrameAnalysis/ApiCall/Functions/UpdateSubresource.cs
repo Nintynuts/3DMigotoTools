@@ -1,6 +1,9 @@
-﻿namespace Migoto.Log.Parser.ApiCalls
+﻿
+namespace Migoto.Log.Parser.ApiCalls
 {
-    public class UpdateSubresource : SingleSlot
+    using Assets;
+
+    public class UpdateSubresource : SingleSlot<Asset>
     {
         public UpdateSubresource(uint order) : base(order) { }
 

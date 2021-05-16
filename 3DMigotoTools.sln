@@ -11,12 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FrameAnalysis.Test", "Frame
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7AF5BE5B-EE53-4B85-A805-24E241FBD796}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Config", "Config\Config.csproj", "{A07E7F1B-B2E0-4C14-90A4-C22CA90445D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShaderFixes", "ShaderFixes\ShaderFixes.csproj", "{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShaderFixes", "ShaderFixes\ShaderFixes.csproj", "{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

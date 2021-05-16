@@ -11,13 +11,13 @@ namespace Migoto.Log.Parser
     using OMGetRTsAndUAVs = ApiCalls.OMGetRenderTargetsAndUnorderedAccessViews;
     using OMSetRTsAndUAVs = ApiCalls.OMSetRenderTargetsAndUnorderedAccessViews;
 
-    public class DrawCall : IDeferred<DrawCall, DrawCall>, IOwned<Frame>
+    public class DrawCall : IOwned<Frame>, IDeferred<DrawCall, DrawCall>
     {
-        public Frame Owner { get; set; }
+        public Frame? Owner { get; set; }
         public Deferred<DrawCall, DrawCall> Deferred { get; }
-        public DrawCall Fallback { get; }
+        public DrawCall? Fallback { get; }
 
-        public DrawCall(uint index, DrawCall previous)
+        public DrawCall(uint index, DrawCall? previous)
         {
             Index = index;
             Fallback = previous;
@@ -36,9 +36,9 @@ namespace Migoto.Log.Parser
 
         public uint Index { get; }
 
-        public string Logic { get; set; }
+        public string? Logic { get; set; }
 
-        public IDraw Draw { get; set; }
+        public IDraw? Draw { get; set; }
 
         public ICollection<Map> Mappings { get; }
         public ICollection<Unmap> Unmappings { get; }
@@ -50,29 +50,29 @@ namespace Migoto.Log.Parser
         public ICollection<ClearRenderTargetView> RenderTargetCleared { get; }
         public ICollection<ClearUnorderedAccessViewUint> UnorderedAccessViewCleared { get; }
 
-        public RSSetState RasterizerState { get => Deferred.Get<RSSetState>(); set => Deferred.Set(value); }
-        public RSSetScissorRects RasterizerScissorRects { get => Deferred.Get<RSSetScissorRects>(); set => Deferred.Set(value); }
-        public RSSetViewports Viewports { get => Deferred.Get<RSSetViewports>(); set => Deferred.Set(value); }
+        public RSSetState? RasterizerState { get => Deferred.Get<RSSetState>(); set => Deferred.Set(value); }
+        public RSSetScissorRects? RasterizerScissorRects { get => Deferred.Get<RSSetScissorRects>(); set => Deferred.Set(value); }
+        public RSSetViewports? Viewports { get => Deferred.Get<RSSetViewports>(); set => Deferred.Set(value); }
 
-        public OMSetRenderTargets SetRenderTargets { get => Deferred.Get<OMSetRenderTargets>(); set => Deferred.Set(value); }
-        public OMSetBlendState BlendState { get => Deferred.Get<OMSetBlendState>(); set => Deferred.Set(value); }
-        public OMSetDepthStencilState DepthStencilState { get => Deferred.Get<OMSetDepthStencilState>(); set => Deferred.Set(value); }
-        public OMGetRTsAndUAVs GetRTsAndUAVs { get => Deferred.Get<OMGetRTsAndUAVs>(false); set => Deferred.Set(value); }
-        public OMSetRTsAndUAVs SetRTsAndUAVs { get => Deferred.Get<OMSetRTsAndUAVs>(false); set => Deferred.Set(value); }
+        public OMSetRenderTargets? SetRenderTargets { get => Deferred.Get<OMSetRenderTargets>(); set => Deferred.Set(value); }
+        public OMSetBlendState? BlendState { get => Deferred.Get<OMSetBlendState>(); set => Deferred.Set(value); }
+        public OMSetDepthStencilState? DepthStencilState { get => Deferred.Get<OMSetDepthStencilState>(); set => Deferred.Set(value); }
+        public OMGetRTsAndUAVs? GetRTsAndUAVs { get => Deferred.Get<OMGetRTsAndUAVs>(false); set => Deferred.Set(value); }
+        public OMSetRTsAndUAVs? SetRTsAndUAVs { get => Deferred.Get<OMSetRTsAndUAVs>(false); set => Deferred.Set(value); }
 
-        public IASetPrimitiveTopology PrimitiveTopology { get => Deferred.Get<IASetPrimitiveTopology>(); set => Deferred.Set(value); }
+        public IASetPrimitiveTopology? PrimitiveTopology { get => Deferred.Get<IASetPrimitiveTopology>(); set => Deferred.Set(value); }
 
-        public IASetInputLayout InputLayout { get => Deferred.Get<IASetInputLayout>(); set => Deferred.Set(value); }
+        public IASetInputLayout? InputLayout { get => Deferred.Get<IASetInputLayout>(); set => Deferred.Set(value); }
 
-        public IASetVertexBuffers SetVertexBuffers { get => Deferred.Get<IASetVertexBuffers>(); set => Deferred.Set(value); }
+        public IASetVertexBuffers? SetVertexBuffers { get => Deferred.Get<IASetVertexBuffers>(); set => Deferred.Set(value); }
 
-        public IASetIndexBuffer SetIndexBuffer { get => Deferred.Get<IASetIndexBuffer>(); set => Deferred.Set(value); }
+        public IASetIndexBuffer? SetIndexBuffer { get => Deferred.Get<IASetIndexBuffer>(); set => Deferred.Set(value); }
 
         internal Dictionary<ShaderType, ShaderContext> Shaders { get; }
 
         public ShaderContext Shader(ShaderType type) => Shaders[type];
 
-        public void SetOwner(Frame newOwner) => Owner = newOwner;
+        public void SetOwner(Frame? newOwner) => Owner = newOwner;
 
         public IEnumerable<string> MergeWarnings => Deferred.OfType<IMergable>().SelectMany(m => m.MergeWarnings);
 

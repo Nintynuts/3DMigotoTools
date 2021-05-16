@@ -31,7 +31,7 @@ namespace Migoto.Log.Parser.Assets
 
         public string Name => Fix?.Name ?? Override?.FriendlyName ?? string.Empty;
 
-        private ICollection<Shader> Partner(ShaderType type) => References.Select(r => r.Shader(type)).Select(c => c.SetShader?.Shader).Consolidate();
+        private ICollection<Shader> Partner(ShaderType type) => References.Select(r => r.Shader(type).SetShader).Select(c => c?.Shader).ExceptNull().Consolidate();
         public ICollection<Shader> PartnerVS => Partner(Vertex);
         public ICollection<Shader> PartnerPS => Partner(Pixel);
         public ICollection<Shader> PartnerHS => Partner(Hull);
@@ -42,11 +42,11 @@ namespace Migoto.Log.Parser.Assets
         public ICollection<Texture> PartnerRTs => PartnerResource<Texture>(ctx => ctx.Owner.SetRenderTargets?.RenderTargets);
         public ICollection<Buffer> PartnerBuffers => PartnerResource<Buffer>(ctx => ctx.SetConstantBuffers?.ConstantBuffers);
 
-        public ShaderOverride Override { get; set; }
+        public ShaderOverride? Override { get; set; }
 
-        public ShaderFix Fix { get; set; }
+        public ShaderFix? Fix { get; set; }
 
-        private ICollection<T> PartnerResource<T>(Func<ShaderContext, IEnumerable<Resource>> selector)
+        private ICollection<T> PartnerResource<T>(Func<ShaderContext, IEnumerable<Resource>?> selector)
             => References.SelectMany(r => selector(r.Shader(ShaderType))?.Select(rv => rv.Asset).OfType<T>() ?? Enumerable.Empty<T>()).Consolidate();
     }
 }

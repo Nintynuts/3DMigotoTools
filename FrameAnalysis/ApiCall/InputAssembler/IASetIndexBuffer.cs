@@ -2,7 +2,7 @@
 {
     using Assets;
 
-    public class IASetIndexBuffer : SingleSlot, IInputAssembler
+    public class IASetIndexBuffer : SingleSlot<Buffer>, IInputAssembler
     {
         public IASetIndexBuffer(uint order) : base(order) { }
 
@@ -10,6 +10,6 @@
         public uint Format { get; set; }
         public uint Offset { get; set; }
 
-        public Buffer Buffer => Asset as Buffer;
+        public Buffer? Buffer => Asset;
     }
 }

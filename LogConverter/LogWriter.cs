@@ -12,9 +12,10 @@ namespace Migoto.Log.Converter
     using Parser.Assets;
     using Parser.Slots;
 
-    using Column = Column<Parser.DrawCall, object>;
+    using Column = Column<Parser.DrawCall, object?>;
     using IColumns = IColumns<Parser.DrawCall>;
 
+    [Flags]
     public enum DrawCallColumns
     {
         Index = 0,
@@ -28,6 +29,7 @@ namespace Migoto.Log.Converter
         All = IA | OM | Logic,
     }
 
+    [Flags]
     public enum ShaderColumns
     {
         Hash = 0,
@@ -40,7 +42,7 @@ namespace Migoto.Log.Converter
     {
         private class AssetColumnSet : ColumnSet<DrawCall, IResource>
         {
-            public AssetColumnSet(string name, Func<DrawCall, IMultiSlot> provider, IEnumerable<int> columns)
+            public AssetColumnSet(string name, Func<DrawCall, IMultiSlot?> provider, IEnumerable<int> columns)
                 : base(name, dc => provider(dc)?.Slots, GetValue, columns) { }
 
             public static string GetValue(DrawCall ctx, IResource item)
@@ -73,26 +75,26 @@ namespace Migoto.Log.Converter
             }
         }
 
-        private class ShaderColumn : Column<DrawCall, Shader>
+        private class ShaderColumn : Column<DrawCall, Shader?>
         {
-            public ShaderColumn(string name, Func<DrawCall, Shader> provider)
+            public ShaderColumn(string name, Func<DrawCall, Shader?> provider)
                 : base(name, provider, GetValue) { }
 
-            public static string GetValue(DrawCall dc, Shader shader)
+            public static string GetValue(DrawCall dc, Shader? shader)
                 => $"\"{GetText(shader).Trim()}\"";
 
-            private static string GetText(Shader shader) => (shader?.Hex ?? string.Empty) + " " + shader?.Name;
+            private static string GetText(Shader? shader) => (shader?.Hex ?? string.Empty) + " " + shader?.Name;
         }
 
-        private class HashColumn : Column<DrawCall, IHash>
+        private class HashColumn : Column<DrawCall, IHash?>
         {
-            public HashColumn(string name, Func<DrawCall, IHash> provider)
+            public HashColumn(string name, Func<DrawCall, IHash?> provider)
                 : base(name, provider, GetValue) { }
 
-            public static string GetValue(DrawCall dc, IHash hash)
+            public static string GetValue(DrawCall dc, IHash? hash)
                 => $"\"{GetText(hash).Trim()}\"";
 
-            private static string GetText(IHash hash) => hash?.Hex ?? string.Empty;
+            private static string GetText(IHash? hash) => hash?.Hex ?? string.Empty;
         }
 
         private class UintColumn : Column<DrawCall, uint?>
@@ -100,13 +102,13 @@ namespace Migoto.Log.Converter
             public UintColumn(string name, Func<DrawCall, uint?> provider)
                 : base(name, provider, AsString) { }
 
-            private static string AsString(DrawCall dc, uint? number)
+            private static string AsString(DrawCall _, uint? number)
                 => number?.ToString() ?? "?";
         }
 
         public static string GetOutputFileFrom(string inputFilePath)
         {
-            Regex frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
+            var frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
             if (frameAnalysisPattern.IsMatch(inputFilePath))
                 inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
             return inputFilePath.Replace(".txt", ".csv");
@@ -114,6 +116,9 @@ namespace Migoto.Log.Converter
 
         public static void Write(MigotoData data, StreamWriter output)
         {
+            if (data.FrameAnalysis == null)
+                return;
+
             var frames = data.FrameAnalysis.Frames;
             var columnGroups = data.ColumnGroups;
             var shaderColumns = data.ShaderColumns;
@@ -123,7 +128,7 @@ namespace Migoto.Log.Converter
             var columns = new List<IColumns>();
 
             if (frames.Count > 1)
-                columns.Add(new Column("Frame", dc => dc.Owner.Index));
+                columns.Add(new Column("Frame", dc => dc.Owner?.Index));
 
             columns.Add(new Column("Draw", dc => dc.Index));
 

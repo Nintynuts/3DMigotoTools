@@ -7,9 +7,9 @@ namespace Migoto.Log.Parser.Slots
 
     public interface IResource
     {
-        Asset Asset { get; }
+        Asset? Asset { get; }
 
-        IApiCall Owner { get; }
+        IApiCall? Owner { get; }
 
         ulong Pointer { get; }
 

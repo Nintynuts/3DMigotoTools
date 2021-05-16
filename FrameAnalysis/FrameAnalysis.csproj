@@ -1,11 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5</TargetFramework>
     <RootNamespace>Migoto.Log.Parser</RootNamespace>
     <Version>0.1.0</Version>
     <Authors>Nintynuts</Authors>
+    <Nullable>Enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Config\Config.csproj" />

@@ -28,7 +28,6 @@ namespace Migoto.Log.Parser
 
         private readonly Dictionary<string, Type> apiCallTypes = typeof(IApiCall).Assembly.GetTypes().Where(t => t.Is<IApiCall>() && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
         private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.IsGeneric(typeof(ICollection<>)) || p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
-        private readonly MethodInfo shader = typeof(DrawCall).GetMethod(nameof(DrawCall.Shader));
         private readonly Dictionary<Type, PropertyInfo> shaderContextProps = typeof(ShaderContext).GetProperties().Where(p => p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
 
         public readonly Dictionary<string, int> apiCallsSkipped = new Dictionary<string, int>();
@@ -43,7 +42,7 @@ namespace Migoto.Log.Parser
         private uint drawCallNo = 0;
         private uint apiCallNo = 0;
         private DrawCall drawCall = new DrawCall(0, null);
-        private IApiCall apiCall = null;
+        private IApiCall? apiCall = null;
 
         public FrameAnalysis(StreamReader stream, Action<string> logger)
         {
@@ -67,9 +66,10 @@ namespace Migoto.Log.Parser
                 {
                     try
                     {
-                        ParseLine(stream.ReadLine());
+                        if (stream.ReadLine() is { } content)
+                            ParseLine(content);
                     }
-                    catch (TargetInvocationException tie)
+                    catch (TargetInvocationException tie) when (tie.InnerException != null)
                     {
                         throw tie.InnerException;
                     }
@@ -145,7 +145,11 @@ namespace Migoto.Log.Parser
                 (find: new Regex(@"(?:([\r\n]\s+)else \{\1\})? endif"), with: ""),
             };
 
-            Frames.SelectMany(f => f.DrawCalls).Where(dc => dc.Logic != null).ForEach(dc => replacements.ForEach(r => dc.Logic = r.find.Replace(dc.Logic, r.with)));
+            foreach (var dc in Frames.SelectMany(f => f.DrawCalls))
+            {
+                if (dc.Logic != null)
+                    replacements.ForEach(r => dc.Logic = r.find.Replace(dc.Logic, r.with));
+            }
         }
 
         private void ProcessFrameAndDrawCall(GroupCollection captures)
@@ -182,7 +186,7 @@ namespace Migoto.Log.Parser
         {
             var methodName = captures["method"].Value;
             if (!(apiCallTypes.TryGetValue(methodName, out var apiCallType)
-                || apiCallTypes.TryGetValue(methodName.Substring(2), out apiCallType)))
+                || apiCallTypes.TryGetValue(methodName[2..], out apiCallType)))
             {
                 RecordUnhandled(methodName);
                 return;
@@ -203,19 +207,18 @@ namespace Migoto.Log.Parser
             var hex = captures["hash"];
             if (hex.Success)
             {
-                if (apiCall is SetShader setShader)
+                if (apiCall is SetShader setShader && shaderType != null)
                 {
                     var hash = ulong.Parse(hex.Value, NumberStyles.HexNumber);
                     if (!Shaders.TryGetValue(hash, out var shader))
                     {
-                        shader = new Shader(shaderType.Value);
-                        shader.Hash = hash;
+                        shader = new Shader(shaderType.Value) { Hash = hash };
                         Shaders.Add(hash, shader);
                     }
                     shader.References.Add(drawCall);
                     setShader.Shader = shader;
                 }
-                else if (apiCall is SingleSlot singleSlot)
+                else if (apiCall is IAssetSlot assetSlot)
                 {
                     var hash = uint.Parse(hex.Value, NumberStyles.HexNumber);
                     if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
@@ -224,12 +227,12 @@ namespace Migoto.Log.Parser
 
                         if (apiCall is IASetIndexBuffer indexBuffer)
                             asset = new Buffer();
-                        else if (unknown == null)
+                        else if (asset == null)
                             asset = new Unknown();
 
                         RegisterAsset(hash, asset, unknown);
                     }
-                    singleSlot.UpdateAsset(asset);
+                    assetSlot.UpdateAsset(asset);
                 }
             }
             if (apiCallType.Is<IDraw>())
@@ -239,16 +242,16 @@ namespace Migoto.Log.Parser
                 var shaderCtx = drawCall.Shader(shaderType.Value);
                 apiCall.GetType().GetProperty(nameof(ShaderType))?.SetValue(apiCall, shaderType.Value);
                 property.SetTo(shaderCtx, apiCall);
-                apiCall = property.GetFrom<IApiCall>(shaderCtx);
+                //apiCall = property.GetFrom<IApiCall>(shaderCtx);
             }
             else if (drawCallProps.TryGetValue(apiCallType, out property))
             {
                 property.SetTo(drawCall, apiCall);
-                apiCall = property.GetFrom<IApiCall>(drawCall);
+                //apiCall = property.GetFrom<IApiCall>(drawCall);
             }
             else if (drawCallProps.TryGetValue(typeof(ICollection<>).MakeGenericType(apiCallType), out var listProperty))
             {
-                drawCall.Add(listProperty, apiCall);
+                listProperty.Add(drawCall, apiCall);
             }
             else
             {
@@ -258,6 +261,9 @@ namespace Migoto.Log.Parser
 
         private void ProcessResourceSlot(GroupCollection captures)
         {
+            if (apiCall is null)
+                return;
+
             if (apiCall is IResource resource)
             {
                 PopulateResourceSlot(captures, resource);
@@ -265,7 +271,7 @@ namespace Migoto.Log.Parser
             }
 
             var apiCallType = apiCall.GetType();
-            PropertyInfo slots;
+            PropertyInfo? slots;
             Type slotType;
 
             string index = captures["index"].Value;
@@ -292,7 +298,7 @@ namespace Migoto.Log.Parser
             if (useList)
             {
                 slot.SetFromString(nameof(Resource.Index), captures["index"].Value);
-                apiCall.Add(slots, slot);
+                slots.Add(apiCall, slot);
             }
             else
             {
@@ -325,7 +331,7 @@ namespace Migoto.Log.Parser
             }
         }
 
-        private void RegisterAsset(uint hash, Asset asset, Unknown unknown = null)
+        private void RegisterAsset(uint hash, Asset asset, Unknown? unknown = null)
         {
             asset.Hash = hash;
 
@@ -342,7 +348,7 @@ namespace Migoto.Log.Parser
 
         private void ProcessSamplerSlot(GroupCollection captures)
         {
-            if (!(apiCall is SetSamplers samplers))
+            if (apiCall is not SetSamplers samplers)
                 throw new ArgumentException("Sampler slots without preceding SetSampler");
 
             var sampler = new Sampler();

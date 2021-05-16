@@ -9,8 +9,8 @@ namespace Migoto.Log.Parser.ApiCalls
         public ulong pResource { get; set; }
         public uint Subresource { get; set; }
 
-        public ResourceView ResourceView { get; set; }
+        public ResourceView? ResourceView { get; set; }
 
-        IResource ISingleSlot.Slot => ResourceView;
+        IResource? ISingleSlot.Slot => ResourceView;
     }
 }

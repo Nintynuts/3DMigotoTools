@@ -23,7 +23,7 @@ namespace Migoto.Log.Parser.Test
             IMultiSlot multiSlot = multiSlot1;
             Assert.AreEqual(0u, multiSlot.StartSlot);
             Assert.AreEqual(8u, multiSlot.NumSlots);
-            Assert.AreEqual(2, multiSlot1.PointersMerged.Count());
+            Assert.AreEqual(2, multiSlot1.PointersMerged.Count);
             Assert.AreEqual(2, multiSlot1.MergeWarnings.Count());
         }
 
@@ -36,7 +36,7 @@ namespace Migoto.Log.Parser.Test
             deferred1.TestSlots = new TestSlots(0, 10, i => i % 2 == 0);
             deferred2.TestSlots = new TestSlots(0, 10, i => i % 2 == 1, setByMerge: true);
 
-            Assert.AreEqual(10, deferred2.TestSlots.GlobalSlotsMask.Count(), "Global Slots Mask");
+            Assert.AreEqual(10, deferred2.TestSlots.GlobalSlotsMask.Count, "Global Slots Mask");
             Assert.AreEqual(10, deferred2.TestSlots.Slots.Count(s => s != null), "Not Null Slots");
         }
 
@@ -49,7 +49,7 @@ namespace Migoto.Log.Parser.Test
             deferred1.TestSlots = new TestSlots(0, 10, i => i % 2 == 0);
             deferred2.TestSlots = new TestSlots(0, 10, i => i % 2 == 1);
 
-            Assert.AreEqual(10, deferred2.TestSlots.GlobalSlotsMask.Count(), "Global Slots Mask");
+            Assert.AreEqual(10, deferred2.TestSlots.GlobalSlotsMask.Count, "Global Slots Mask");
             Assert.AreEqual(10, deferred2.TestSlots.Slots.Count(), "Set Slots");
             Assert.AreEqual(5, deferred2.TestSlots.Slots.Count(s => s != null), "Not Null Slots");
         }

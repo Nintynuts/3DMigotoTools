@@ -25,6 +25,6 @@ namespace Migoto.Log.Parser.ApiCalls
 
         public override List<int> GlobalSlotsMask => UsedSlots.GetOrAdd(ShaderType);
 
-        protected override Deferred<ShaderContext, DrawCall> PreviousDeferred => Owner.Fallback?.Shader(ShaderType).Deferred;
+        protected override Deferred<ShaderContext, DrawCall>? PreviousDeferred => Owner?.Fallback?.Shader(ShaderType).Deferred;
     }
 }

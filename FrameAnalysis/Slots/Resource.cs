@@ -8,7 +8,7 @@ namespace Migoto.Log.Parser.Slots
     {
         public ulong Pointer { get; set; }
 
-        public Asset Asset { get; set; }
+        public Asset? Asset { get; set; }
 
         public void UpdateAsset(Asset asset)
         {
@@ -18,7 +18,7 @@ namespace Migoto.Log.Parser.Slots
                 Asset?.Register(this);
         }
 
-        public override void SetOwner(IApiCall newOwner)
+        public override void SetOwner(IApiCall? newOwner)
         {
             if (newOwner == null && Owner != null)
                 Asset?.Unregister(this);

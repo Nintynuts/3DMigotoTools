@@ -1,22 +1,29 @@
 ﻿
 namespace Migoto.Log.Parser.ApiCalls
 {
+    using System.IO;
     using Assets;
     using Slots;
 
     public interface ISingleSlot
     {
-        IResource Slot { get; }
+        IResource? Slot { get; }
     }
 
-    public abstract class SingleSlot : ApiCall, ISingleSlot, IResource
+    public interface IAssetSlot : ISingleSlot
+    {
+        void UpdateAsset(Asset asset);
+    }
+
+    public abstract class SingleSlot<T> : ApiCall, IAssetSlot, IResource
+        where T : Asset
     {
         protected SingleSlot(uint order) : base(order) { }
 
-        public Asset Asset { get; protected set; }
+        public T? Asset { get; protected set; }
 
         IApiCall IResource.Owner => this;
-
+        Asset? IResource.Asset => Asset;
         ulong IResource.Pointer => Pointer;
         protected ulong Pointer { get; set; }
 
@@ -24,8 +31,10 @@ namespace Migoto.Log.Parser.ApiCalls
 
         public void UpdateAsset(Asset asset)
         {
+            if (asset is not T assetT)
+                throw new InvalidDataException("Trying to change type of asset");
             Asset?.Unregister(this);
-            Asset = asset;
+            Asset = assetT;
             Asset?.Register(this);
         }
     }

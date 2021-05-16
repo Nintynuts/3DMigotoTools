@@ -17,17 +17,18 @@ namespace Migoto.Log.Parser.ApiCalls
         {
             base.Merge(value);
 
-            if (value.DepthStencil != null)
+            if (value.D != null)
             {
                 pDepthStencilView = value.pDepthStencilView;
-                DepthStencil?.SetOwner(null);
+                D?.SetOwner(null);
                 D = value.D;
-                DepthStencil.SetOwner(this);
+                D.SetOwner(this);
             }
         }
 
         public ulong pDepthStencilView { get; set; }
-        public ResourceView D { get; set; }
-        public ResourceView DepthStencil => D;
+        /// <summary> DepthStencil name in Log </summary>
+        public ResourceView? D { get; set; }
+        public ResourceView? DepthStencil => D;
     }
 }

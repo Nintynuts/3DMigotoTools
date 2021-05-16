@@ -16,6 +16,7 @@ namespace Migoto.Log.Parser
         }
 
         public static bool TryGetValue<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, out TValue? value)
+            where TKey : notnull
             where TValue : struct
         {
             var success = !dict.TryGetValue(key, out var result);
@@ -24,6 +25,7 @@ namespace Migoto.Log.Parser
         }
 
         public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TValue> makeNew)
+            where TKey : notnull
         {
             if (!dict.ContainsKey(key))
                 dict.Add(key, makeNew());
@@ -31,18 +33,20 @@ namespace Migoto.Log.Parser
         }
 
         public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key)
+            where TKey : notnull
             where TValue : new()
         {
             return dict.GetOrAdd(key, () => new TValue());
         }
 
         public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue defaultValue = default)
+            where TKey : notnull
             where TValue : struct
         {
             return dict.GetOrAdd(key, () => defaultValue);
         }
 
-        public static IEnumerable<T> ExceptNull<T>(this IEnumerable<T> items) where T : class
-            => items.Where(s => s != null);
+        public static IEnumerable<T> ExceptNull<T>(this IEnumerable<T?> items) where T : notnull
+            => items.OfType<T>();
     }
 }

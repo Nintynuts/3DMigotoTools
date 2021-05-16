@@ -2,7 +2,7 @@
 {
     public interface IOverriden<T>
     {
-        T LastUser { get; }
+        T? LastUser { get; }
 
         void SetLastUser(T lastUser);
     }

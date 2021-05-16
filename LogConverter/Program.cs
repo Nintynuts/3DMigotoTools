@@ -9,17 +9,20 @@ namespace Migoto.Log.Converter
 
     class Program
     {
-        private static ConsoleInterface ui;
-        private static MigotoData loadedData;
+        private static readonly ConsoleInterface ui;
+        private static readonly MigotoData loadedData;
 
-        static void Main(string[] args)
+        static Program()
         {
             ui = new ConsoleInterface();
             loadedData = new MigotoData(ui);
+        }
 
+        static void Main(string[] args)
+        {
             var input = args?.AsEnumerable() ?? Enumerable.Empty<string>();
 
-            string inputFilePath = null;
+            string? inputFilePath = null;
 
             if (input.Any() && input.First().Contains("."))
             {
@@ -27,16 +30,19 @@ namespace Migoto.Log.Converter
                 input = input.Skip(1);
             }
 
+            if (inputFilePath == null)
+                ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, inputFilePath, out inputFilePath);
+
             loadedData.GetColumnSelection(input);
 
             if (inputFilePath != null)
             {
                 if (inputFilePath.EndsWith(MigotoData.D3DX))
                 {
-                    if (GetD3DXPath(ref inputFilePath))
-                        loadedData.GetMetadata(Path.GetDirectoryName(inputFilePath));
+                    if (GetD3DXPath(ref inputFilePath) && Path.GetDirectoryName(inputFilePath) is { } dirName)
+                        loadedData.GetMetadata(dirName);
                 }
-                else if (inputFilePath.EndsWith(".txt") && GetValidLog(ref inputFilePath))
+                else if (inputFilePath.EndsWith(".txt") && GetValidLog(inputFilePath, out inputFilePath))
                 {
                     OutputLog(loadedData, inputFilePath);
                     LogFunctions(inputFilePath);
@@ -50,52 +56,55 @@ namespace Migoto.Log.Converter
                 {
                     case "manual":
                         var logFile = "";
-                        if (GetValidLog(ref logFile))
+                        if (GetValidLog(logFile, out logFile) && logFile != null)
                             LogFunctions(logFile);
                         break;
                     case "auto":
-                        if (GetD3DXPath(ref inputFilePath))
+                        if (GetD3DXPath(ref inputFilePath) && inputFilePath != null)
                             WatchFolder(inputFilePath);
                         break;
                 }
             }
         }
 
-        private static bool GetD3DXPath(ref string d3dxPath)
+        private static bool GetD3DXPath(ref string? d3dxPath)
         {
-            return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, ref d3dxPath);
+            return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, d3dxPath, out d3dxPath);
         }
 
         private static void WatchFolder(string inputFilePath)
         {
-            inputFilePath = Path.GetDirectoryName(inputFilePath);
+            if (Path.GetDirectoryName(inputFilePath) is not { } dirName)
+                return;
+
+            inputFilePath = dirName;
             var auto = new AutoConverter(inputFilePath, loadedData, ui);
             ui.WaitForCancel("Watching for new FrameAnalysis export");
             auto.Quit();
         }
 
-        private static bool GetValidLog(ref string path)
+        private static bool GetValidLog(string? initial, out string path)
         {
-            return ui.GetFile("frame analysis log file (log.txt)", ".txt", ref path)
+            return ui.GetFile("frame analysis log file (log.txt)", ".txt", initial, out path) && path != null
                     && loadedData.LoadLog(path, ui.Event);
         }
 
         private static void LogFunctions(string inputFilePath)
         {
-            while (ui.GetInfo("function to perform", out var func))
+            while (loadedData.FrameAnalysis != null && ui.GetInfo("function to perform", out var func))
             {
                 switch (func.ToLower())
                 {
                     case "log":
                         OutputLog(loadedData, inputFilePath); break;
-                    case "asset":
-                        OutputAsset(loadedData.FrameAnalysis, Path.GetDirectoryName(inputFilePath)); break;
+                    case "asset" when Path.GetDirectoryName(inputFilePath) is { } path:
+                        OutputAsset(loadedData.FrameAnalysis, path); break;
                     case "set-columns":
                         loadedData.GetColumnSelection(); break;
                     case "get-metadata":
                         var d3dxPath = "";
-                        while (!GetD3DXPath(ref d3dxPath))
-                            loadedData.GetMetadata(Path.GetDirectoryName(d3dxPath));
+                        while (!GetD3DXPath(ref d3dxPath) && Path.GetDirectoryName(d3dxPath) is { } path)
+                            loadedData.GetMetadata(path);
                         break;
                 }
             }
@@ -105,6 +114,8 @@ namespace Migoto.Log.Converter
         {
             var outputFile = LogWriter.GetOutputFileFrom(inputFilePath);
             using var output = IOHelpers.TryWriteFile(outputFile, ui);
+            if (output == null)
+                return;
             LogWriter.Write(data, output);
             ui.Event("Export Log complete");
         }
@@ -126,25 +137,27 @@ namespace Migoto.Log.Converter
                     continue;
                 }
 
-                if (frameAnalysis.Assets.TryGetValue(hash, out var asset))
+                if (!frameAnalysis.Assets.TryGetValue(hash, out var asset))
                 {
-                    using var assetFile = IOHelpers.TryWriteFile(Path.Combine(folder, $"{asset.Hex}.csv"), ui);
-                    try
+                    ui.Event($"Hash not found: {hex}");
+                    continue;
+                }
+
+                using var assetFile = IOHelpers.TryWriteFile(Path.Combine(folder, $"{asset.Hex}.csv"), ui);
+                try
+                {
+                    if (assetFile != null)
                     {
                         AssetWriter.Write(asset, assetFile);
                         ui.Event($"Export of {asset.Hex} complete");
-                        return;
-                    }
-                    catch (Exception e)
-                    {
-                        ui.Event($"Export of {asset.Hex} failed:");
-                        ui.Event(e.ToString());
+                        continue;
                     }
                 }
-                else
+                catch (Exception e)
                 {
-                    ui.Event($"Hash not found: {hex}");
+                    ui.Event(e.ToString());
                 }
+                ui.Event($"Export of {asset.Hex} failed:");
             }
             ui.Event("Export Asset aborted");
         }
