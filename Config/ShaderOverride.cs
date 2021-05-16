@@ -1,7 +1,12 @@
-﻿namespace Migoto.Config
+﻿using System.Globalization;
+
+namespace Migoto.Config
 {
-    public class ShaderOverride : Override
+    public class ShaderOverride : Override<ulong>
     {
-        public ulong Hash { get; set; }
+        public override string HashFromString
+        {
+            set => Hash = ulong.Parse(value ?? "0", NumberStyles.HexNumber);
+        }
     }
 }

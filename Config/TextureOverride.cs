@@ -1,7 +1,12 @@
-﻿namespace Migoto.Config
+﻿using System.Globalization;
+
+namespace Migoto.Config
 {
-    public class TextureOverride : Override
+    public class TextureOverride : Override<uint>
     {
-        public uint Hash { get; set; }
+        public override string HashFromString
+        {
+            set => Hash = uint.Parse(value ?? "0", NumberStyles.HexNumber);
+        }
     }
 }

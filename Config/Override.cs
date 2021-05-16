@@ -1,10 +1,9 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace Migoto.Config
 {
-    public class Override
+    public abstract class Override
     {
         private readonly static Regex camelCase = new Regex(@"(?<=[a-z])(?=[A-Z0-9])");
 
@@ -12,8 +11,16 @@ namespace Migoto.Config
 
         public string Name { get; set; }
 
+        public abstract string HashFromString { set; }
+
         public List<string> Lines { get; set; }
 
         public string FriendlyName => camelCase.Replace(Name, " ").Replace('_', ' ').Trim();
+    }
+
+    public abstract class Override<THash> : Override
+        where THash : struct
+    {
+        public THash Hash { get; protected set; }
     }
 }
