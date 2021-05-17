@@ -27,7 +27,7 @@ namespace Migoto.Log.Parser.ApiCalls
         private readonly List<string> mergeWarnings = new List<string>();
 
         private List<int>? slotsMask;
-        private List<TSlot>? slotsSet;
+        private List<TSlot?>? slotsSet;
 
         protected MultiSlotBase()
         {
@@ -50,8 +50,8 @@ namespace Migoto.Log.Parser.ApiCalls
         private List<int> SlotsMask
             => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).ToList();
 
-        protected List<TSlot> SlotsSet
-            => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ExceptNull().ToList();
+        protected List<TSlot?> SlotsSet
+            => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ToList();
 
         public abstract List<int> GlobalSlotsMask { get; }
 
