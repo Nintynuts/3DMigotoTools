@@ -16,7 +16,7 @@ namespace Migoto.Log.Parser.Assets
     }
 
     [System.Diagnostics.DebuggerDisplay("{GetType().Name}: {Hash.ToString(\"X\")}")]
-    public abstract class Asset : IHash
+    public abstract class Asset : IHash, IConfigOverride<uint>
     {
         private readonly List<IResource> uses = new List<IResource>();
 
@@ -35,7 +35,7 @@ namespace Migoto.Log.Parser.Assets
         public List<IApiCall> LifeCycle
             => Uses.Select(s => s.Owner).ExceptNull().OrderBy(dc => dc.Owner?.Owner?.Index).ThenBy(dc => dc.Owner?.Index).ThenBy(dc => dc.Order).ToList();
 
-        public TextureOverride? Override { get; set; }
+        public Override<uint>? Override { get; set; }
 
         public List<Register> VariableNames { get; } = new List<Register>();
 

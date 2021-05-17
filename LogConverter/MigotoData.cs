@@ -7,6 +7,7 @@ namespace Migoto.Log.Converter
 {
     using Migoto.Config;
     using Migoto.Log.Parser.ApiCalls;
+    using Migoto.Log.Parser.Assets;
     using Migoto.ShaderFixes;
 
     using Parser;
@@ -17,12 +18,12 @@ namespace Migoto.Log.Converter
         public const string D3DX = "d3dx.ini";
         public DrawCallColumns ColumnGroups { get; private set; }
         public List<(ShaderType type, ShaderColumns columns)> ShaderColumns { get; } = new();
+        public string? RootFolder { get; private set; }
         public FrameAnalysis? FrameAnalysis { get; private set; }
         public Config Config { get; } = new Config();
         public ShaderFixes ShaderFixes { get; } = new ShaderFixes();
 
         private readonly IUserInterface ui;
-        private bool metadataLoaded;
 
         internal MigotoData(IUserInterface ui) => this.ui = ui;
 
@@ -38,7 +39,7 @@ namespace Migoto.Log.Converter
                 logger("Provided file is not a 3DMigoto FrameAnalysis log file");
                 return false;
             }
-            if (!metadataLoaded)
+            if (!Config.Files.Any())
             {
                 var possibleRoot = Directory.GetParent(validFilePath)?.Parent;
                 if (possibleRoot?.GetFiles(D3DX).Any() == true)
@@ -91,28 +92,34 @@ namespace Migoto.Log.Converter
             });
         }
 
-        public void GetMetadata(string rootPath)
+        public void GetMetadata(string d3dxPath)
         {
+            RootFolder = IOHelpers.GetDirectoryName(d3dxPath);
             ui.Status("Reading metadata from ini config files...");
-            Config.Read(Path.Combine(rootPath, D3DX));
-            ui.Event($"TextureOverrides: {Config.TextureOverrides.Count}\nShaderOverrides: {Config.ShaderOverrides.Count}");
+            Config.Read(d3dxPath, reset: true);
+            ui.Event($"TextureOverrides: {Config.TextureOverrides.Count()}\nShaderOverrides: {Config.ShaderOverrides.Count()}");
+
+            if (Config.OverrideDirectory is null)
+                return; // Unlikely to happen, as this is in the default d3dx.ini
+
             ui.Status("Reading metadata from shader fixes...");
-            ShaderFixes.Scrape(rootPath);
+            ShaderFixes.Scrape(Path.Combine(RootFolder, Config.OverrideDirectory));
             ui.Event($"Shaders: {ShaderFixes.ShaderNames.Count}\nTexture Registers: {ShaderFixes.Textures.Count}\nConstant Buffer Registers {ShaderFixes.ConstantBuffers.Count}");
-            metadataLoaded = true;
         }
 
         public void LinkOverrides(FrameAnalysis frameAnalysis)
         {
-            Config.TextureOverrides.ForEach(to =>
+            LinkOverrides(Config.TextureOverrides, frameAnalysis.Assets);
+            LinkOverrides(Config.ShaderOverrides, frameAnalysis.Shaders);
+        }
+
+        private static void LinkOverrides<THash, TAsset>(IEnumerable<Override<THash>> overrides, Dictionary<THash, TAsset> assets)
+            where THash : struct where TAsset : IConfigOverride<THash>
+        {
+            overrides.GroupBy(to => to.Hash).ForEach(o =>
             {
-                if (frameAnalysis.Assets.TryGetValue(to.Hash, out var asset))
-                    asset.Override = to;
-            });
-            Config.ShaderOverrides.ForEach(so =>
-            {
-                if (frameAnalysis.Shaders.TryGetValue(so.Hash, out var shader))
-                    shader.Override = so;
+                if (assets.TryGetValue(o.Key, out var asset))
+                    asset.Override = o.SingleOrDefault() ?? new MultiOverride<THash>(o);
             });
         }
 

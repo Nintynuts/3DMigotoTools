@@ -39,8 +39,8 @@ namespace Migoto.Log.Converter
             {
                 if (inputFilePath.EndsWith(MigotoData.D3DX))
                 {
-                    if (GetD3DXPath(ref inputFilePath) && Path.GetDirectoryName(inputFilePath) is { } dirName)
-                        loadedData.GetMetadata(dirName);
+                    if (GetD3DXPath(inputFilePath, out inputFilePath))
+                        loadedData.GetMetadata(inputFilePath);
                 }
                 else if (inputFilePath.EndsWith(".txt") && GetValidLog(inputFilePath, out inputFilePath))
                 {
@@ -60,24 +60,21 @@ namespace Migoto.Log.Converter
                             LogFunctions(logFile);
                         break;
                     case "auto":
-                        if (GetD3DXPath(ref inputFilePath) && inputFilePath != null)
+                        if (GetD3DXPath(inputFilePath, out inputFilePath))
                             WatchFolder(inputFilePath);
                         break;
                 }
             }
         }
 
-        private static bool GetD3DXPath(ref string? d3dxPath)
+        private static bool GetD3DXPath(string? initial, out string d3dxPath)
         {
-            return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, d3dxPath, out d3dxPath);
+            return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, initial, out d3dxPath);
         }
 
         private static void WatchFolder(string inputFilePath)
         {
-            if (Path.GetDirectoryName(inputFilePath) is not { } dirName)
-                return;
-
-            inputFilePath = dirName;
+            inputFilePath = IOHelpers.GetDirectoryName(inputFilePath);
             var auto = new AutoConverter(inputFilePath, loadedData, ui);
             ui.WaitForCancel("Watching for new FrameAnalysis export");
             auto.Quit();
@@ -97,14 +94,14 @@ namespace Migoto.Log.Converter
                 {
                     case "log":
                         OutputLog(loadedData, inputFilePath); break;
-                    case "asset" when Path.GetDirectoryName(inputFilePath) is { } path:
-                        OutputAsset(loadedData.FrameAnalysis, path); break;
+                    case "asset":
+                        OutputAsset(loadedData.FrameAnalysis, IOHelpers.GetDirectoryName(inputFilePath)); break;
                     case "set-columns":
                         loadedData.GetColumnSelection(); break;
                     case "get-metadata":
                         var d3dxPath = "";
-                        while (!GetD3DXPath(ref d3dxPath) && Path.GetDirectoryName(d3dxPath) is { } path)
-                            loadedData.GetMetadata(path);
+                        while (!GetD3DXPath(d3dxPath, out d3dxPath))
+                            loadedData.GetMetadata(IOHelpers.GetDirectoryName(d3dxPath));
                         break;
                 }
             }

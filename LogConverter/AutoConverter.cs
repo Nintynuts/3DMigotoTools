@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 
 namespace Migoto.Log.Converter
 {
@@ -6,27 +7,38 @@ namespace Migoto.Log.Converter
     {
         private readonly MigotoData data;
         private readonly IUserInterface ui;
-        private readonly FileSystemWatcher watcher;
+        private readonly FileSystemWatcher frameAnalysisWatcher;
+        private readonly FileSystemWatcher iniFileWatcher;
 
         public AutoConverter(string rootFolder, MigotoData data, IUserInterface ui)
         {
             this.data = data;
             this.ui = ui;
-            watcher = new FileSystemWatcher(rootFolder, "FrameAnalysis-*")
+            frameAnalysisWatcher = new FileSystemWatcher(rootFolder, "FrameAnalysis-*")
             {
                 NotifyFilter = NotifyFilters.DirectoryName,
                 EnableRaisingEvents = true
             };
-            watcher.Created += Created;
+            frameAnalysisWatcher.Created += FrameAnalysisCreated;
+
+            iniFileWatcher = new FileSystemWatcher(rootFolder, "*.ini")
+            {
+                NotifyFilter = NotifyFilters.FileName,
+                EnableRaisingEvents = true
+            };
+            iniFileWatcher.Created += ConfigCreated;
+            iniFileWatcher.Changed += ConfigChanged;
         }
 
         public void Quit()
         {
-            watcher.Created -= Created;
-            watcher.Dispose();
+            frameAnalysisWatcher.Created -= FrameAnalysisCreated;
+            frameAnalysisWatcher.Dispose();
+            iniFileWatcher.Created -= ConfigChanged;
+            iniFileWatcher.Dispose();
         }
 
-        private void Created(object sender, FileSystemEventArgs e)
+        private void FrameAnalysisCreated(object sender, FileSystemEventArgs e)
         {
             string inputFilePath = Path.Combine(e.FullPath, "log.txt");
             string outputFilePath = LogWriter.GetOutputFileFrom(inputFilePath);
@@ -41,6 +53,17 @@ namespace Migoto.Log.Converter
                 return;
             }
             ui.Event($"Conversion failure: {e.Name}");
+        }
+
+        private void ConfigCreated(object sender, FileSystemEventArgs e)
+        {
+            if (data.Config.Files.Any(f => f.WouldRecursivelyInclude(e.FullPath)))
+                data.Config.Read(e.FullPath);
+        }
+
+        private void ConfigChanged(object sender, FileSystemEventArgs e)
+        {
+            data.Config.ReloadConfig(e.FullPath);
         }
     }
 }

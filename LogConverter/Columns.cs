@@ -55,8 +55,6 @@ namespace Migoto.Log.Converter
 
     internal static class CsvExtensions
     {
-        public static string Delimit(this IEnumerable<string> items, char delimiter)
-            => items.Any() ? items.Aggregate((a, b) => $"{a}{delimiter}{b}") : string.Empty;
         public static string ToCSV(this IEnumerable<string> items) => items.Delimit(',');
         public static string Headers<T>(this IEnumerable<IColumns<T>> items) => items.SelectMany(i => i.Columns).ToCSV();
         public static string Values<T>(this IEnumerable<IColumns<T>> items, T ctx) => items.SelectMany(i => i.GetValues(ctx)).ToCSV();

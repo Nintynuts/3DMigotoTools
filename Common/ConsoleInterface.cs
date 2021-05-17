@@ -1,9 +1,7 @@
-﻿using System;
-using System.IO;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Timers;
 
-namespace Migoto.Log.Converter
+namespace System.IO
 {
     using static Console;
 
@@ -24,7 +22,7 @@ namespace Migoto.Log.Converter
         bool WaitForContinue();
     }
 
-    internal class ConsoleInterface : IUserInterface
+    public class ConsoleInterface : IUserInterface
     {
         private readonly string wait = @"|/-\";
         private int waitCycle;

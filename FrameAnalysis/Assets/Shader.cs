@@ -11,7 +11,7 @@ namespace Migoto.Log.Parser.Assets
     using Slots;
     using static ApiCalls.ShaderType;
 
-    public class Shader : IHash
+    public class Shader : IHash, IConfigOverride<ulong>
     {
         public Shader(ShaderType shaderType)
         {
@@ -42,7 +42,7 @@ namespace Migoto.Log.Parser.Assets
         public ICollection<Texture> PartnerRTs => PartnerResource<Texture>(ctx => ctx.Owner.SetRenderTargets?.RenderTargets);
         public ICollection<Buffer> PartnerBuffers => PartnerResource<Buffer>(ctx => ctx.SetConstantBuffers?.ConstantBuffers);
 
-        public ShaderOverride? Override { get; set; }
+        public Override<ulong>? Override { get; set; }
 
         public ShaderFix? Fix { get; set; }
 

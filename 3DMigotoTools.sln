@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Config", "Config\Config.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShaderFixes", "ShaderFixes\ShaderFixes.csproj", "{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{9952E1CD-4A6C-4EBF-A66B-3173575E1473}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDC73959-98DA-41D7-B3ED-2C20685A0FCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9952E1CD-4A6C-4EBF-A66B-3173575E1473}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9952E1CD-4A6C-4EBF-A66B-3173575E1473}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9952E1CD-4A6C-4EBF-A66B-3173575E1473}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9952E1CD-4A6C-4EBF-A66B-3173575E1473}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

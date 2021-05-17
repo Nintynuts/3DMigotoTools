@@ -1,9 +1,8 @@
-﻿using System.IO;
-using System.Threading;
+﻿using System.Threading;
 
-namespace Migoto.Log.Converter
+namespace System.IO
 {
-    static class IOHelpers
+    public static class IOHelpers
     {
         public static StreamWriter? TryWriteFile(string fileName, IUserInterface? ui = null)
         {
@@ -40,5 +39,8 @@ namespace Migoto.Log.Converter
 
             Thread.Sleep(100);
         }
+
+        public static string GetDirectoryName(string path)
+            => Path.GetDirectoryName(path) ?? throw new InvalidDataException($"File \"{path}\" may not be located on the root of a file system.");
     }
 }

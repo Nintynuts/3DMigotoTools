@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-
+using System.Reflection;
 
 namespace Migoto.Log.Converter
 {
-    using System.Diagnostics.CodeAnalysis;
     using Parser;
     using Parser.ApiCalls;
     using Parser.Assets;

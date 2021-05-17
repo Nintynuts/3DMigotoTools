@@ -7,15 +7,15 @@ namespace Migoto.Config
     {
         private readonly static Regex camelCase = new Regex(@"(?<=[a-z])(?=[A-Z0-9])");
 
-        public string Namespace { get; set; }
+        public string? Namespace { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
-        public abstract string HashFromString { set; }
+        public abstract string? HashFromString { set; }
 
-        public List<string> Lines { get; set; }
+        public List<string>? Lines { get; set; }
 
-        public string FriendlyName => camelCase.Replace(Name, " ").Replace('_', ' ').Trim();
+        public string FriendlyName => Name == null ? string.Empty : camelCase.Replace(Name, " ").Replace('_', ' ').Trim();
     }
 
     public abstract class Override<THash> : Override
