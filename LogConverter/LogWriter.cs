@@ -106,14 +106,6 @@ namespace Migoto.Log.Converter
                 => number?.ToString() ?? "?";
         }
 
-        public static string GetOutputFileFrom(string inputFilePath)
-        {
-            var frameAnalysisPattern = new Regex(@"(?<=FrameAnalysis([-\d]+)[\\/])(\w+)(?=\.txt)");
-            if (frameAnalysisPattern.IsMatch(inputFilePath))
-                inputFilePath = frameAnalysisPattern.Replace(inputFilePath, "$2$1");
-            return inputFilePath.Replace(".txt", ".csv");
-        }
-
         public static void Write(MigotoData data, StreamWriter output)
         {
             if (data.FrameAnalysis == null)

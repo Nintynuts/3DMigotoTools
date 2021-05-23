@@ -42,9 +42,9 @@ namespace Migoto.Log.Converter
         private static object GetResourceIdenfifier(Asset asset, IApiCall dc)
             => TryGetResource(asset, dc, out var resource) ? resource.Index : GetResourceName(asset, dc);
 
-        private static bool TryGetResource(Asset asset, IApiCall dc, [MaybeNullWhen(false)] out IResourceSlot resource)
+        private static bool TryGetResource(Asset asset, IApiCall dc, [NotNullWhen(true)] out IResourceSlot resource)
         {
-            resource = null;
+            resource = null!;
             return dc is IMultiSlot multiSlot && GetResource(asset, multiSlot) is { } result && (resource = result) == result;
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -22,30 +23,30 @@ namespace Migoto.Log.Converter
         {
             var input = args?.AsEnumerable() ?? Enumerable.Empty<string>();
 
-            string? inputFilePath = null;
+            FileInfo? inputFile = null;
 
-            if (input.Any() && input.First().Contains("."))
+            if (input.Any() && input.First() is { } path && path.Contains("."))
             {
-                inputFilePath = input.First();
+                inputFile = new FileInfo(path);
                 input = input.Skip(1);
             }
 
-            if (inputFilePath == null)
-                ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, inputFilePath, out inputFilePath);
+            if (inputFile == null)
+                ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, inputFile, out inputFile);
 
             loadedData.GetColumnSelection(input);
 
-            if (inputFilePath != null)
+            if (inputFile != null)
             {
-                if (inputFilePath.EndsWith(MigotoData.D3DX))
+                if (inputFile.Extension == MigotoData.D3DX)
                 {
-                    if (GetD3DXPath(inputFilePath, out inputFilePath))
-                        loadedData.GetMetadata(inputFilePath);
+                    if (GetD3DXPath(inputFile, out inputFile))
+                        loadedData.GetMetadata(inputFile);
                 }
-                else if (inputFilePath.EndsWith(".txt") && GetValidLog(inputFilePath, out inputFilePath))
+                else if (inputFile.Extension == FrameAnalysis.Extension && GetValidLog(inputFile, out inputFile))
                 {
-                    OutputLog(loadedData, inputFilePath);
-                    LogFunctions(inputFilePath);
+                    OutputLog(loadedData, inputFile);
+                    LogFunctions(inputFile);
                     return;
                 }
             }
@@ -55,69 +56,66 @@ namespace Migoto.Log.Converter
                 switch (func.ToLower())
                 {
                     case "manual":
-                        var logFile = "";
-                        if (GetValidLog(logFile, out logFile) && logFile != null)
+                        if (GetValidLog(null, out var logFile) && logFile != null)
                             LogFunctions(logFile);
                         break;
                     case "auto":
-                        if (GetD3DXPath(inputFilePath, out inputFilePath))
-                            WatchFolder(inputFilePath);
+                        if (GetD3DXPath(inputFile, out inputFile))
+                            WatchFolder(inputFile);
                         break;
                 }
             }
         }
 
-        private static bool GetD3DXPath(string? initial, out string d3dxPath)
+        private static bool GetD3DXPath(FileInfo? initial, [NotNullWhen(true)] out FileInfo d3dxPath)
         {
             return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, initial, out d3dxPath);
         }
 
-        private static void WatchFolder(string inputFilePath)
+        private static void WatchFolder(FileInfo inputFile)
         {
-            inputFilePath = IOHelpers.GetDirectoryName(inputFilePath);
-            var auto = new AutoConverter(inputFilePath, loadedData, ui);
+            var auto = new AutoConverter(inputFile.Directory!, loadedData, ui);
             ui.WaitForCancel("Watching for new FrameAnalysis export");
             auto.Quit();
         }
 
-        private static bool GetValidLog(string? initial, out string path)
+        private static bool GetValidLog(FileInfo? initial, [NotNullWhen(true)] out FileInfo file)
         {
-            return ui.GetFile("frame analysis log file (log.txt)", ".txt", initial, out path) && path != null
-                    && loadedData.LoadLog(path, ui.Event);
+            return ui.GetFile($"frame analysis log file (log{FrameAnalysis.Extension})", FrameAnalysis.Extension, initial, out file)
+                && loadedData.LoadLog(file, ui.Event);
         }
 
-        private static void LogFunctions(string inputFilePath)
+        private static void LogFunctions(FileInfo inputFile)
         {
             while (loadedData.FrameAnalysis != null && ui.GetInfo("function to perform", out var func))
             {
                 switch (func.ToLower())
                 {
                     case "log":
-                        OutputLog(loadedData, inputFilePath); break;
+                        OutputLog(loadedData, inputFile); break;
                     case "asset":
-                        OutputAsset(loadedData.FrameAnalysis, IOHelpers.GetDirectoryName(inputFilePath)); break;
+                        OutputAsset(loadedData.FrameAnalysis, inputFile.Directory!); break;
                     case "set-columns":
                         loadedData.GetColumnSelection(); break;
                     case "get-metadata":
-                        var d3dxPath = "";
-                        while (!GetD3DXPath(d3dxPath, out d3dxPath))
-                            loadedData.GetMetadata(IOHelpers.GetDirectoryName(d3dxPath));
+                        if (GetD3DXPath(null, out var d3dxPath))
+                            loadedData.GetMetadata(d3dxPath);
                         break;
                 }
             }
         }
 
-        private static void OutputLog(MigotoData data, string inputFilePath)
+        private static void OutputLog(MigotoData data, FileInfo file)
         {
-            var outputFile = LogWriter.GetOutputFileFrom(inputFilePath);
-            using var output = IOHelpers.TryWriteFile(outputFile, ui);
+            var outputFile = file.ChangeExt(CSV.Extension);
+            using var output = outputFile.TryOpenWrite(ui);
             if (output == null)
                 return;
             LogWriter.Write(data, output);
             ui.Event("Export Log complete");
         }
 
-        private static void OutputAsset(FrameAnalysis frameAnalysis, string folder)
+        private static void OutputAsset(FrameAnalysis frameAnalysis, DirectoryInfo folder)
         {
             while (ui.GetInfo("a resource hash to dump lifecycle for", out var hex))
             {
@@ -140,7 +138,7 @@ namespace Migoto.Log.Converter
                     continue;
                 }
 
-                using var assetFile = IOHelpers.TryWriteFile(Path.Combine(folder, $"{asset.Hex}.csv"), ui);
+                using var assetFile = folder.File(asset.Hex + CSV.Extension).TryOpenWrite(ui);
                 try
                 {
                     if (assetFile != null)

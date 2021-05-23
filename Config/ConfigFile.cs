@@ -9,16 +9,18 @@ namespace Migoto.Config
     {
         private static readonly ConfigParserSettings settings = new() { MultiLineValues = MultiLineValues.AllowValuelessKeys };
         private readonly DirectoryInfo parentFolder;
-        private readonly IEnumerable<string>? recursiveIncludes;
-        private readonly IEnumerable<string>? directIncludes;
+        private readonly IEnumerable<FileInfo>? recursiveIncludes;
+        private readonly IEnumerable<FileInfo>? directIncludes;
 
-        public ConfigFile(string path, DirectoryInfo rootFolder)
+        public const string Extension = ".ini";
+
+        public ConfigFile(FileInfo ini, DirectoryInfo rootFolder)
         {
-            var parser = new ConfigParser(path, settings);
+            var parser = new ConfigParser(ini.FullName, settings);
 
-            FilePath = path;
-            Namespace = path.Replace(rootFolder.FullName + @"\", "").Replace(".ini", "");
-            parentFolder = new DirectoryInfo(IOHelpers.GetDirectoryName(path));
+            File = ini;
+            Namespace = ini.FullName.Replace(rootFolder.FullName + @"\", "").Replace(Extension, "");
+            parentFolder = ini.Directory!;
 
             TextureOverrides = ParseOverrides<TextureOverride>(parser);
             ShaderOverrides = ParseOverrides<ShaderOverride>(parser);
@@ -30,22 +32,22 @@ namespace Migoto.Config
             if (parser.GetSection("Include") is not { } includeSection)
                 return;
 
-            directIncludes = includeSection.GetValues<string>("include").Select(i => Path.Combine(parentFolder.FullName, i));
-            IncludeFolder = includeSection.GetValue<string>("include_recursive");
-            ExcludeFolder = includeSection.GetValue<string>("exclude_recursive");
+            directIncludes = includeSection.GetValues<string>("include").Select(parentFolder.File);
+            IncludeRecursive = includeSection.GetValue<string>("include_recursive");
+            ExcludeRecursive = includeSection.GetValue<string>("exclude_recursive");
             recursiveIncludes = GetFolderIncludes(parentFolder);
         }
 
-        public string FilePath { get; }
+        public FileInfo File { get; }
         public string Namespace { get; }
         public IEnumerable<TextureOverride> TextureOverrides { get; }
         public IEnumerable<ShaderOverride> ShaderOverrides { get; }
         public string? OverrideDirectory { get; }
-        public string? IncludeFolder { get; }
-        public string? ExcludeFolder { get; }
-        public IEnumerable<string> RecursiveIncludes => recursiveIncludes.OrEmpty();
-        public IEnumerable<string> DirectIncludes => directIncludes.OrEmpty();
-        public IEnumerable<string> Includes => DirectIncludes.Concat(RecursiveIncludes).Distinct();
+        public string? IncludeRecursive { get; }
+        public string? ExcludeRecursive { get; }
+        public IEnumerable<FileInfo> RecursiveIncludes => recursiveIncludes.OrEmpty();
+        public IEnumerable<FileInfo> DirectIncludes => directIncludes.OrEmpty();
+        public IEnumerable<FileInfo> Includes => DirectIncludes.Concat(RecursiveIncludes).Distinct();
 
         private IEnumerable<T> ParseOverrides<T>(ConfigParser file) where T : Override, new()
         {
@@ -60,18 +62,19 @@ namespace Migoto.Config
             });
         }
 
-        private IEnumerable<string> GetFolderIncludes(DirectoryInfo currentDir)
+        private IEnumerable<FileInfo> GetFolderIncludes(DirectoryInfo currentDir)
         {
             // include recursive might not be defined, so skip if missing
-            return IncludeFolder is null ? Enumerable.Empty<string>()
-                : currentDir.CreateSubdirectory(IncludeFolder)
-                            .GetFiles("*.ini", SearchOption.AllDirectories)
-                            .Select(f => f.FullName)
-                            .Where(p => ExcludeFolder == null || !p.Contains(ExcludeFolder));
+            return IncludeRecursive is null ? Enumerable.Empty<FileInfo>()
+                : currentDir.CreateSubdirectory(IncludeRecursive)
+                            .GetFiles($"*{Extension}", SearchOption.AllDirectories)
+                            .Where(p => !IsExcluded(p.FullName));
         }
 
-        public bool WouldRecursivelyInclude(string iniPath)
-            => IncludeFolder != null && iniPath.Replace(parentFolder.FullName + @"\", "") is { } relativePath
-               && relativePath.StartsWith(IncludeFolder) && (ExcludeFolder == null || !relativePath.Contains(ExcludeFolder));
+        public bool WouldRecursivelyInclude(FileInfo ini)
+            => IncludeRecursive != null && ini.FullName.Replace(parentFolder.FullName + @"\", "") is { } relativePath
+               && relativePath.StartsWith(IncludeRecursive) && !IsExcluded(relativePath);
+
+        private bool IsExcluded(string relativePath) => !string.IsNullOrWhiteSpace(ExcludeRecursive) && relativePath.Contains(ExcludeRecursive);
     }
 }

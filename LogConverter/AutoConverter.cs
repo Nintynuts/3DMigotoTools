@@ -3,67 +3,74 @@ using System.Linq;
 
 namespace Migoto.Log.Converter
 {
+    using Config;
+    using Parser;
+
     class AutoConverter
     {
         private readonly MigotoData data;
         private readonly IUserInterface ui;
         private readonly FileSystemWatcher frameAnalysisWatcher;
+        private readonly FileSystemEventHandler frameAnalyisCreated;
         private readonly FileSystemWatcher iniFileWatcher;
+        private readonly FileSystemEventHandler configCreated;
+        private readonly FileSystemEventHandler configChanged;
 
-        public AutoConverter(string rootFolder, MigotoData data, IUserInterface ui)
+        public AutoConverter(DirectoryInfo root, MigotoData data, IUserInterface ui)
         {
             this.data = data;
             this.ui = ui;
-            frameAnalysisWatcher = new FileSystemWatcher(rootFolder, "FrameAnalysis-*")
+            frameAnalysisWatcher = new FileSystemWatcher(root.FullName, "FrameAnalysis-*")
             {
                 NotifyFilter = NotifyFilters.DirectoryName,
                 EnableRaisingEvents = true
             };
-            frameAnalysisWatcher.Created += FrameAnalysisCreated;
+            frameAnalysisWatcher.Created += frameAnalyisCreated = IOHelpers.Handler<DirectoryInfo>(FrameAnalysisCreated);
 
-            iniFileWatcher = new FileSystemWatcher(rootFolder, "*.ini")
+            iniFileWatcher = new FileSystemWatcher(root.FullName, $"*{ConfigFile.Extension}")
             {
                 NotifyFilter = NotifyFilters.FileName,
                 EnableRaisingEvents = true
             };
-            iniFileWatcher.Created += ConfigCreated;
-            iniFileWatcher.Changed += ConfigChanged;
+            iniFileWatcher.Created += configCreated = IOHelpers.Handler<FileInfo>(ConfigCreated);
+            iniFileWatcher.Changed += configChanged = IOHelpers.Handler<FileInfo>(ConfigChanged);
         }
 
         public void Quit()
         {
-            frameAnalysisWatcher.Created -= FrameAnalysisCreated;
+            frameAnalysisWatcher.Created -= frameAnalyisCreated;
             frameAnalysisWatcher.Dispose();
-            iniFileWatcher.Created -= ConfigChanged;
+            iniFileWatcher.Changed -= configChanged;
+            iniFileWatcher.Created -= configCreated;
             iniFileWatcher.Dispose();
         }
 
-        private void FrameAnalysisCreated(object sender, FileSystemEventArgs e)
+        private void FrameAnalysisCreated(DirectoryInfo directory)
         {
-            string inputFilePath = Path.Combine(e.FullPath, "log.txt");
-            string outputFilePath = LogWriter.GetOutputFileFrom(inputFilePath);
-            string logFilePath = Path.Combine(e.FullPath, "3DMT-log.txt");
+            var inputFile = directory.File($"log{FrameAnalysis.Extension}");
+            var outputFile = inputFile.ChangeExt(CSV.Extension);
+            var logFile = directory.File("conversion.log");
 
-            using var logging = IOHelpers.TryWriteFile(logFilePath, ui);
-            using var output = IOHelpers.TryWriteFile(outputFilePath, ui);
-            if (output != null && logging != null && data.LoadLog(inputFilePath, msg => logging.WriteLine(msg)))
+            using var logging = logFile.TryOpenWrite(ui);
+            using var output = outputFile.TryOpenWrite(ui);
+            if (output != null && logging != null && data.LoadLog(inputFile, msg => logging.WriteLine(msg)))
             {
                 LogWriter.Write(data, output);
-                ui.Event($"Conversion success: {e.Name}");
+                ui.Event($"Conversion success: {directory.Name}");
                 return;
             }
-            ui.Event($"Conversion failure: {e.Name}");
+            ui.Event($"Conversion failure: {directory.Name}");
         }
 
-        private void ConfigCreated(object sender, FileSystemEventArgs e)
+        private void ConfigCreated(FileInfo file)
         {
-            if (data.Config.Files.Any(f => f.WouldRecursivelyInclude(e.FullPath)))
-                data.Config.Read(e.FullPath);
+            if (data.Config.Files.Any(f => f.WouldRecursivelyInclude(file)))
+                data.Config.Read(file);
         }
 
-        private void ConfigChanged(object sender, FileSystemEventArgs e)
+        private void ConfigChanged(FileInfo file)
         {
-            data.Config.ReloadConfig(e.FullPath);
+            data.Config.ReloadConfig(file);
         }
     }
 }

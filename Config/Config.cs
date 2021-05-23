@@ -34,20 +34,20 @@ namespace Migoto.Config
             };
         }
 
-        public void Read(string d3dxPath, bool reset = false)
+        public void Read(FileInfo d3dx, bool reset = false)
         {
             if (reset)
                 files.Clear();
 
-            rootFolder = new(IOHelpers.GetDirectoryName(d3dxPath));
+            rootFolder = d3dx.Directory;
 
-            RecurseIncludes(d3dxPath);
+            RecurseIncludes(d3dx);
         }
 
-        private void RecurseIncludes(string iniPath)
+        private void RecurseIncludes(FileInfo ini)
         {
             // Skip already processed file
-            if (GetExistingConfig(iniPath) is not null || GetNewConfig(iniPath) is not { } configFile)
+            if (GetExistingConfig(ini) is not null || GetNewConfig(ini) is not { } configFile)
                 return;
 
             // Add this file
@@ -58,18 +58,18 @@ namespace Migoto.Config
                 RecurseIncludes(include);
         }
 
-        public void ReloadConfig(string iniPath)
+        public void ReloadConfig(FileInfo ini)
         {
-            if (GetNewConfig(iniPath) is not { } reloadedConfig)
+            if (GetNewConfig(ini) is not { } reloadedConfig)
                 return;
 
-            var existingConfig = GetExistingConfig(iniPath);
+            var existingConfig = GetExistingConfig(ini);
             if (existingConfig != null)
             {
                 UpdateConfigs(reloadedConfig, existingConfig, cfg => cfg.DirectIncludes);
 
-                if (reloadedConfig.IncludeFolder != existingConfig.IncludeFolder
-                    || reloadedConfig.ExcludeFolder != existingConfig.ExcludeFolder)
+                if (reloadedConfig.IncludeRecursive != existingConfig.IncludeRecursive
+                    || reloadedConfig.ExcludeRecursive != existingConfig.ExcludeRecursive)
                 {
                     UpdateConfigs(reloadedConfig, existingConfig, cfg => cfg.RecursiveIncludes);
                 }
@@ -79,7 +79,7 @@ namespace Migoto.Config
             files.Add(reloadedConfig);
         }
 
-        private void UpdateConfigs(ConfigFile reloadedConfig, ConfigFile existingConfig, Func<ConfigFile, IEnumerable<string>> includes)
+        private void UpdateConfigs(ConfigFile reloadedConfig, ConfigFile existingConfig, Func<ConfigFile, IEnumerable<FileInfo>> includes)
         {
             var oldConfigs = includes(existingConfig).Except(includes(reloadedConfig)).Select(GetExistingConfig).ExceptNull();
             oldConfigs.ForEach(c => files.Remove(c));
@@ -88,8 +88,8 @@ namespace Migoto.Config
             newConfigs.ForEach(files.Add);
         }
 
-        private ConfigFile? GetNewConfig(string iniPath) => rootFolder is null ? null : new ConfigFile(iniPath, rootFolder);
+        private ConfigFile? GetNewConfig(FileInfo ini) => rootFolder is null ? null : new ConfigFile(ini, rootFolder);
 
-        private ConfigFile? GetExistingConfig(string iniPath) => files.FirstOrDefault(cfg => cfg.FilePath == iniPath);
+        private ConfigFile? GetExistingConfig(FileInfo ini) => files.FirstOrDefault(cfg => cfg.File.FullName == ini.FullName);
     }
 }

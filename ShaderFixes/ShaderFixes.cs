@@ -29,24 +29,24 @@ namespace Migoto.ShaderFixes
         private readonly List<ShaderUsage<string>> includes = new List<ShaderUsage<string>>();
         private readonly List<string> done = new List<string>();
 
+        public const string Extension = "_replace.txt";
+
         public List<ShaderFix> ShaderNames { get; } = new List<ShaderFix>();
         public List<ShaderUsage<Register>> ConstantBuffers { get; private set; } = new List<ShaderUsage<Register>>();
         public List<ShaderUsage<Register>> Textures { get; private set; } = new List<ShaderUsage<Register>>();
 
-        public void Scrape(string rootPath)
+        public void Scrape(DirectoryInfo shaderFixes)
         {
-            string shaderfixes = Path.Combine(rootPath, "ShaderFixes");
+            var files = shaderFixes.GetFiles($"*{Extension}");
 
-            var files = Directory.GetFiles(shaderfixes, "*_replace.txt");
-
-            foreach (var filePath in files)
+            foreach (var file in files)
             {
-                var filename = Path.GetFileName(filePath);
-                var hash = ulong.Parse(filename.Substring(0, filename.IndexOf('-')), NumberStyles.HexNumber);
-                var reader = new StreamReader(filePath);
-                ShaderNames.Add(new ShaderFix(filename, hash, reader.ReadLine().Replace("// ", "")));
-                reader.Close();
-                ParseFile(filePath, new[] { hash });
+                var hash = ulong.Parse(file.Name.Substring(0, file.Name.IndexOf('-')), NumberStyles.HexNumber);
+                using var reader = file.TryOpenRead();
+                string firstLine = reader.ReadLine();
+                var name = firstLine.StartsWith("//") ? firstLine[2..] : hash.ToString();
+                ShaderNames.Add(new ShaderFix(file.Name, hash, name.Trim()));
+                ParseFile(file, new[] { hash });
             }
 
             do
@@ -57,20 +57,19 @@ namespace Migoto.ShaderFixes
                 includes.Clear();
 
                 foreach (var include in uniqueIncludes)
-                    ParseFile(Path.Combine(shaderfixes, include.Thing), include.Hashes);
+                    ParseFile(shaderFixes.File(include.Thing), include.Hashes);
             } while (includes.Any());
 
             ConstantBuffers = Consolidate(ConstantBuffers);
             Textures = Consolidate(Textures);
         }
 
-        private void ParseFile(string filePath, IEnumerable<ulong> hashes)
+        private void ParseFile(FileInfo file, IEnumerable<ulong> hashes)
         {
-            var reader = new StreamReader(filePath);
+            using var reader = file.TryOpenRead();
             var shader = reader.ReadToEnd();
 
             includes.AddRange(includePattern.Matches(shader).Select(m => new ShaderUsage<string>(m.Groups["path"].Value, hashes)));
-            reader.Close();
 
             ReadRegisters(ConstantBuffers, constantBufferPattern);
             ReadRegisters(Textures, textureMacroPattern);

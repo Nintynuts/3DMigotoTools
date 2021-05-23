@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 using System.Timers;
 
 namespace System.IO
@@ -9,9 +10,9 @@ namespace System.IO
     {
         bool GetInfo(string prompt, out string info);
 
-        bool GetFile(string prompt, string ext, string? initial, out string file);
+        bool GetFile(string prompt, string ext, FileInfo? initial, [NotNullWhen(true)] out FileInfo file);
 
-        bool GetValid(string prompt, string? initial, out string result, Func<string, (bool valid, string? msg, string corrected)> validator);
+        bool GetValid<T>(string prompt, T? initial, out T result, Func<string, (bool valid, string? msg, T corrected)> validator);
 
         void Event(string message);
 
@@ -182,15 +183,17 @@ namespace System.IO
             return Request(message, null, out result);
         }
 
-        public bool GetValid(string prompt, string? initial, out string result, Func<string, (bool valid, string? msg, string corrected)> validator)
+        public bool GetValid<T>(string prompt, T? initial, [NotNullWhen(true)] out T result, Func<string, (bool valid, string? msg, T corrected)> validator)
         {
             ClearLine();
             bool checkedInput = false;
-            while ((initial != null && (result = initial) != null && !checkedInput) || Request(prompt, initial, out result))
+            result = initial!;
+            var resultStr = initial?.ToString();
+            while ((initial != null && resultStr != null && !checkedInput) || Request(prompt, resultStr, out resultStr))
             {
-                var (valid, msg, corrected) = validator(result);
+                var (valid, msg, corrected) = validator(resultStr);
                 result = corrected;
-                if (valid)
+                if (valid && result != null)
                 {
                     Hint();
                     return true;
@@ -201,14 +204,15 @@ namespace System.IO
             return false;
         }
 
-        public bool GetFile(string prompt, string ext, string? initial, out string path)
+        public bool GetFile(string prompt, string ext, FileInfo? initial, [NotNullWhen(true)] out FileInfo file)
         {
             var illegal = new Regex("[\"*/<>?|]");
-            return GetValid($"path of {prompt}", initial, out path, result =>
+            return GetValid($"path of {prompt}", initial, out file, resultStr =>
             {
-                result = illegal.Replace(result, "").Trim();
-                var msg = !File.Exists(result) ? "File doesn't exist" : !result.EndsWith(ext) ? "File has wrong extension" : null;
-                return (msg == null, msg!, result);
+                resultStr = illegal.Replace(resultStr, "").Trim();
+                var file = new FileInfo(resultStr);
+                var msg = !file.Exists ? "File doesn't exist" : !resultStr.EndsWith(ext) ? "File has wrong extension" : null;
+                return (msg == null, msg!, file);
             });
         }
 

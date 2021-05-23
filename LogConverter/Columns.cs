@@ -53,8 +53,10 @@ namespace Migoto.Log.Converter
         public IEnumerable<string> GetValues(TContext ctx) => new[] { selector(ctx, provider(ctx)) };
     }
 
-    internal static class CsvExtensions
+    internal static class CSV
     {
+        public const string Extension = ".csv";
+
         public static string ToCSV(this IEnumerable<string> items) => items.Delimit(',');
         public static string Headers<T>(this IEnumerable<IColumns<T>> items) => items.SelectMany(i => i.Columns).ToCSV();
         public static string Values<T>(this IEnumerable<IColumns<T>> items, T ctx) => items.SelectMany(i => i.GetValues(ctx)).ToCSV();

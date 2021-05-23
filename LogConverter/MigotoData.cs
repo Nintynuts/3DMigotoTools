@@ -5,20 +5,19 @@ using System.Linq;
 
 namespace Migoto.Log.Converter
 {
-    using Migoto.Config;
-    using Migoto.Log.Parser.ApiCalls;
-    using Migoto.Log.Parser.Assets;
-    using Migoto.ShaderFixes;
-
+    using Config;
     using Parser;
+    using Parser.ApiCalls;
+    using Parser.Assets;
     using Parser.Slots;
+    using ShaderFixes;
 
     public class MigotoData
     {
         public const string D3DX = "d3dx.ini";
         public DrawCallColumns ColumnGroups { get; private set; }
         public List<(ShaderType type, ShaderColumns columns)> ShaderColumns { get; } = new();
-        public string? RootFolder { get; private set; }
+        public DirectoryInfo? RootFolder { get; private set; }
         public FrameAnalysis? FrameAnalysis { get; private set; }
         public Config Config { get; } = new Config();
         public ShaderFixes ShaderFixes { get; } = new ShaderFixes();
@@ -27,10 +26,10 @@ namespace Migoto.Log.Converter
 
         internal MigotoData(IUserInterface ui) => this.ui = ui;
 
-        public bool LoadLog(string validFilePath, Action<string> logger)
+        public bool LoadLog(FileInfo file, Action<string> logger)
         {
             ui.Event("Waiting for log to be readable...");
-            using var frameAnalysisFile = IOHelpers.TryReadFile(validFilePath)!;
+            using var frameAnalysisFile = file.TryOpenRead()!;
             ui.Event("Reading log...");
             FrameAnalysis = new FrameAnalysis(frameAnalysisFile, logger);
 
@@ -41,9 +40,9 @@ namespace Migoto.Log.Converter
             }
             if (!Config.Files.Any())
             {
-                var possibleRoot = Directory.GetParent(validFilePath)?.Parent;
-                if (possibleRoot?.GetFiles(D3DX).Any() == true)
-                    GetMetadata(possibleRoot.FullName);
+                var possibleRoot = file.Directory?.Parent;
+                if (possibleRoot?.GetFiles(D3DX).FirstOrDefault() is { } d3dx)
+                    GetMetadata(d3dx);
             }
             LinkOverrides(FrameAnalysis);
             LinkShaderFixes(FrameAnalysis);
@@ -92,18 +91,18 @@ namespace Migoto.Log.Converter
             });
         }
 
-        public void GetMetadata(string d3dxPath)
+        public void GetMetadata(FileInfo d3dx)
         {
-            RootFolder = IOHelpers.GetDirectoryName(d3dxPath);
+            RootFolder = d3dx.Directory!;
             ui.Status("Reading metadata from ini config files...");
-            Config.Read(d3dxPath, reset: true);
+            Config.Read(d3dx, reset: true);
             ui.Event($"TextureOverrides: {Config.TextureOverrides.Count()}\nShaderOverrides: {Config.ShaderOverrides.Count()}");
 
             if (Config.OverrideDirectory is null)
                 return; // Unlikely to happen, as this is in the default d3dx.ini
 
             ui.Status("Reading metadata from shader fixes...");
-            ShaderFixes.Scrape(Path.Combine(RootFolder, Config.OverrideDirectory));
+            ShaderFixes.Scrape(RootFolder.SubDirectory(Config.OverrideDirectory));
             ui.Event($"Shaders: {ShaderFixes.ShaderNames.Count}\nTexture Registers: {ShaderFixes.Textures.Count}\nConstant Buffer Registers {ShaderFixes.ConstantBuffers.Count}");
         }
 

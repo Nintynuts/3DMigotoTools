@@ -33,6 +33,8 @@ namespace Migoto.Log.Parser
         public readonly Dictionary<string, int> apiCallsSkipped = new Dictionary<string, int>();
         public readonly Dictionary<string, int> frameSkipped = new Dictionary<string, int>();
 
+        public const string Extension = ".txt";
+
         public List<Frame> Frames { get; } = new List<Frame>();
         public Dictionary<uint, Asset> Assets { get; } = new Dictionary<uint, Asset>();
         public Dictionary<ulong, Shader> Shaders { get; } = new Dictionary<ulong, Shader>();
