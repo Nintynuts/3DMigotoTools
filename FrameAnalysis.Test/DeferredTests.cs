@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Migoto.Log.Parser.Test
@@ -22,7 +23,7 @@ namespace Migoto.Log.Parser.Test
 
             Assert.AreEqual(first, firstOwnedThing.Owner, "First doesn't own its own thing");
 
-            Assert.AreEqual(first, second.TestProp.Owner, "First doesn't own second's thing");
+            Assert.AreEqual(first, second.TestProp?.Owner, "First doesn't own second's thing");
 
             var secondOwnedThing = new OwnedThing();
             first.TestProp = secondOwnedThing;
@@ -65,13 +66,13 @@ namespace Migoto.Log.Parser.Test
 
     internal class OwnedThing : IOwned<TestThing>, IOverriden<TestThing>
     {
-        public TestThing Owner { get; private set; }
+        public TestThing? Owner { get; private set; }
 
-        public TestThing LastUser { get; private set; }
+        public TestThing? LastUser { get; private set; }
 
         public void SetLastUser(TestThing lastUser) => LastUser = lastUser;
 
-        public void SetOwner(TestThing newOwner) { Owner = newOwner; }
+        public void SetOwner(TestThing? newOwner) => Owner = newOwner;
     }
 
     internal class MergableThing : OwnedThing, IMergable<MergableThing>
@@ -85,20 +86,20 @@ namespace Migoto.Log.Parser.Test
 
     internal class TestThing : IDeferred<TestThing, TestThing>
     {
-        public TestThing(TestThing fallback = null)
+        public TestThing(TestThing? fallback = null)
         {
             Deferred = new Deferred<TestThing, TestThing>(this, fallback);
             Fallback = fallback;
         }
 
-        public TestThing Fallback { get; }
+        public TestThing? Fallback { get; }
 
         public Deferred<TestThing, TestThing> Deferred { get; }
 
-        public OwnedThing TestProp { get => Deferred.Get<OwnedThing>(); set => Deferred.Set(value); }
+        public OwnedThing? TestProp { get => Deferred.Get<OwnedThing>(); set => Deferred.Set(value); }
 
-        public OwnedThing AnotherProp { get => Deferred.Get<OwnedThing>(); set => Deferred.Set(value); }
+        public OwnedThing? AnotherProp { get => Deferred.Get<OwnedThing>(); set => Deferred.Set(value); }
 
-        public MergableThing NotInterited { get => Deferred.Get<MergableThing>(false); set => Deferred.Set(value); }
+        public MergableThing? NotInterited { get => Deferred.Get<MergableThing>(false); set => Deferred.Set(value); }
     }
 }

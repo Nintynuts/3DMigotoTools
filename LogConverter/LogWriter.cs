@@ -38,19 +38,32 @@ namespace Migoto.Log.Converter
         All = Hash | CB | T,
     }
 
-    public static class LogWriter
+    public enum SplitFrames
     {
+        No,
+        Yes,
+        Both,
+    }
+
+
+    public class LogWriter
+    {
+        private readonly List<Frame> frames;
+        private readonly List<IColumns<DrawCall>> columns;
+        private readonly Func<string, StreamWriter?> outputSrc;
+        private readonly SplitFrames splitFrames;
+
         private class AssetColumnSet : ColumnSet<DrawCall, IResource>
         {
-            public AssetColumnSet(string name, Func<DrawCall, IMultiSlot?> provider, IEnumerable<int> columns)
+            public AssetColumnSet(string name, Func<DrawCall, IMultiSlot<IResourceSlot>?> provider, IEnumerable<int> columns)
                 : base(name, dc => provider(dc)?.Slots, GetValue, columns) { }
 
-            public static string GetValue(DrawCall ctx, IResource item)
+            public static string GetValue(DrawCall ctx, IResource? item)
             {
                 return $"\"{GetText(ctx, item).Trim()}\"";
             }
 
-            private static string GetText(DrawCall ctx, IResource item)
+            private static string GetText(DrawCall ctx, IResource? item)
                 => item == null ? string.Empty
                    : item.Asset == null ? "No Hash"
                    : item.Asset.Hex + AsteriskIfModified(ctx, item) + " " + item.Asset.GetName(item.Owner, (item as ISlot)?.Index ?? -1);
@@ -106,23 +119,17 @@ namespace Migoto.Log.Converter
                 => number?.ToString() ?? "?";
         }
 
-        public static void Write(MigotoData data, StreamWriter output)
+        public LogWriter(MigotoData data, FrameAnalysis frameAnalysis, Func<string, StreamWriter?> outputSrc)
         {
-            if (data.FrameAnalysis == null)
-                return;
-
-            var frames = data.FrameAnalysis.Frames;
+            this.outputSrc = outputSrc;
+            frames = frameAnalysis.Frames;
+            splitFrames = data.SplitFrames;
             var columnGroups = data.ColumnGroups;
             var shaderColumns = data.ShaderColumns;
 
-            var logicSplit = new Regex(@"(?<! )(?=post)");
+            var logicSplit = new Regex(@"(?<=[\r\n])(?=\bpost\b)");
 
-            var columns = new List<IColumns>();
-
-            if (frames.Count > 1)
-                columns.Add(new Column("Frame", dc => dc.Owner?.Index));
-
-            columns.Add(new Column("Draw", dc => dc.Index));
+            columns = new List<IColumns> { new Column("Draw", dc => dc.Index) };
 
             if (columnGroups.HasFlag(DrawCallColumns.VB))
                 columns.AddRange(new IColumns[] {
@@ -145,16 +152,18 @@ namespace Migoto.Log.Converter
                     new Column("Topology", dc => dc.PrimitiveTopology?.Topology),
                 });
 
-            IEnumerable<IColumns> GetShaderColumns((ShaderType shaderType, ShaderColumns columns) _)
+            IEnumerable<IColumns> GetShaderColumns((ShaderType shaderType, ShaderColumns columns, int[] indices) _)
             {
                 var shaderType = _.shaderType;
                 var subColumns = _.columns;
+                var indices = _.indices;
                 char x = shaderType.ToString().ToLower()[0];
                 yield return new ShaderColumn($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader));
                 if (subColumns.HasFlag(ShaderColumns.CB))
-                    yield return new AssetColumnSet($"{x}s-cb", dc => dc.Shader(shaderType).SetConstantBuffers, SetConstantBuffers.UsedSlots.GetOrAdd(shaderType));
+                    yield return new AssetColumnSet($"{x}s-cb", dc => dc.Shader(shaderType).SetConstantBuffers, indices.Length > 0 ? indices : SetConstantBuffers.UsedSlots.GetOrAdd(shaderType));
+
                 if (subColumns.HasFlag(ShaderColumns.T))
-                    yield return new AssetColumnSet($"{x}s-t", dc => dc.Shader(shaderType).SetShaderResources, SetShaderResources.UsedSlots.GetOrAdd(shaderType));
+                    yield return new AssetColumnSet($"{x}s-t", dc => dc.Shader(shaderType).SetShaderResources, indices.Length > 0 ? indices : SetShaderResources.UsedSlots.GetOrAdd(shaderType));
             }
 
             columns.AddRange(shaderColumns.OrderBy(s => s.type).SelectMany(GetShaderColumns));
@@ -167,9 +176,47 @@ namespace Migoto.Log.Converter
 
             if (columnGroups.HasFlag(DrawCallColumns.Logic))
                 columns.Add(new Column("Pre,Post", dc => $"\"{logicSplit.Replace(dc.Logic ?? "", "\",\"")}\""));
+        }
+
+        public void Write()
+        {
+            switch (splitFrames)
+            {
+                case SplitFrames.Yes or SplitFrames.Both:
+                    Enumerable.Range(0, frames.Count).ForEach(WriteSingle);
+                    break;
+                case SplitFrames.No or SplitFrames.Both:
+                    WriteAll();
+                    break;
+            }
+        }
+
+        private void WriteAll()
+        {
+            using var output = outputSrc("");
+            if (output == null)
+                return;
+
+            if (frames.Count > 1)
+                columns.Insert(0, new Column("Frame", dc => dc.Owner?.Index));
 
             output.WriteLine($"{columns.Headers()}");
-            frames.ForEach(frame => frame.DrawCalls.ForEach(drawCall => output.WriteLine($"{columns.Values(drawCall)}")));
+            frames.ForEach(frame => WriteFrame(output, frame));
+
+            if (frames.Count > 1)
+                columns.RemoveAt(0);
         }
+
+        private void WriteSingle(int index)
+        {
+            using var output = outputSrc("-" + index);
+            if (output == null)
+                return;
+            output.WriteLine($"{columns.Headers()}");
+            WriteFrame(output, frames[index]);
+        }
+
+        private void WriteFrame(StreamWriter output, Frame frame)
+            => frame.DrawCalls.ForEach(drawCall => output.WriteLine($"{columns.Values(drawCall)}"));
     }
 }

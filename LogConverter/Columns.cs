@@ -14,11 +14,11 @@ namespace Migoto.Log.Converter
     {
         private readonly string name;
 
-        private readonly Func<TContext, IEnumerable<TItem>?> provider;
-        private readonly Func<TContext, TItem, string> selector;
+        private readonly Func<TContext, IReadOnlyList<TItem?>?> provider;
+        private readonly Func<TContext, TItem?, string> selector;
         private readonly IEnumerable<int> columns;
 
-        public ColumnSet(string name, Func<TContext, IEnumerable<TItem>?> provider, Func<TContext, TItem, string> selector, IEnumerable<int> columns)
+        public ColumnSet(string name, Func<TContext, IReadOnlyList<TItem?>?> provider, Func<TContext, TItem?, string> selector, IEnumerable<int> columns)
         {
             this.name = name;
             this.provider = provider;
@@ -29,7 +29,7 @@ namespace Migoto.Log.Converter
         public IEnumerable<string> Columns => columns.Select(i => $"{name}{i}");
 
         public IEnumerable<string> GetValues(TContext ctx)
-            => provider(ctx)?.Select(i => selector(ctx, i)) ?? columns.Select(_ => string.Empty);
+            => provider(ctx)?.Indices(columns).Select(i => selector(ctx, i)) ?? columns.Select(_ => string.Empty);
     }
 
     internal class Column<TContext, TItem> : IColumns<TContext>

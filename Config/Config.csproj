@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5</TargetFramework>
     <RootNamespace>Migoto.Config</RootNamespace>
-    <Nullable>Enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

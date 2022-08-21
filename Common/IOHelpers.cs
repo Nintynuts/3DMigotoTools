@@ -19,6 +19,9 @@ namespace System.IO
             };
         }
 
+        public static FileInfo SuffixName(this FileInfo file, string suffix)
+            => file.Directory!.File(file.Name + suffix);
+
         public static FileInfo ChangeExt(this FileInfo file, string newExtension)
             => file.Directory!.File(file.Name.Replace(file.Extension, newExtension));
 
@@ -38,15 +41,17 @@ namespace System.IO
 
         public static StreamReader? TryOpenRead(this FileInfo file, IUserInterface? ui = null)
         {
+            FileStream? stream = null;
             StreamReader? reader = null;
             do
                 try
                 {
-                    var stream = new FileStream(file.FullName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+                    stream = new FileStream(file.FullName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
                     reader = new StreamReader(stream);
                 }
                 catch (IOException) { AlertAndWait(file.FullName, ui); }
-            while (reader == null && ui?.WaitForContinue() != false);
+            while (!(stream?.Length > 0) && ui?.WaitForContinue() != false);
+
             return reader;
         }
 
@@ -55,7 +60,7 @@ namespace System.IO
             if (ui != null)
                 ui.Status($"File: {fileName} in use, please close it.");
 
-            Thread.Sleep(100);
+            Thread.Sleep(500);
         }
 
         public static string GetDirectoryName(string path)

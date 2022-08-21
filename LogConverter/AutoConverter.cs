@@ -4,6 +4,7 @@ using System.Linq;
 namespace Migoto.Log.Converter
 {
     using Config;
+
     using Parser;
 
     class AutoConverter
@@ -52,10 +53,9 @@ namespace Migoto.Log.Converter
             var logFile = directory.File("conversion.log");
 
             using var logging = logFile.TryOpenWrite(ui);
-            using var output = outputFile.TryOpenWrite(ui);
-            if (output != null && logging != null && data.LoadLog(inputFile, msg => logging.WriteLine(msg)))
+            if (logging != null && data.LoadLog(inputFile, msg => logging.WriteLine(msg)) is { } frameAnalysis)
             {
-                LogWriter.Write(data, output);
+                new LogWriter(data, frameAnalysis, suffix => outputFile.SuffixName(suffix).TryOpenWrite(ui)).Write();
                 ui.Event($"Conversion success: {directory.Name}");
                 return;
             }

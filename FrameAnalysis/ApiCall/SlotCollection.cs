@@ -3,7 +3,7 @@
     using Slots;
 
     internal class SlotCollection<TOwner, TSlot, TSlotOwner> : OwnedCollection<TSlotOwner, TSlot>
-        where TOwner : class, IMultiSlot, TSlotOwner
+        where TOwner : class, IMultiSlot<TSlot>, TSlotOwner
         where TSlot : ISlot<TSlotOwner>, IOwned<TSlotOwner>
         where TSlotOwner : class
     {

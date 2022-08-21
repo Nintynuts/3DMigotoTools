@@ -2,11 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5</TargetFramework>
     <RootNamespace>Migoto.Log.Converter</RootNamespace>
-    <Version>0.1.0</Version>
-    <Authors>Nintynuts</Authors>
-    <Nullable>Enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

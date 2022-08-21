@@ -39,7 +39,7 @@ namespace Migoto.Log.Parser
             Fallback = fallback;
         }
 
-        public TProperty? Get<TProperty>(bool useFallback = true, [CallerMemberName] string name = null)
+        public TProperty? Get<TProperty>(bool useFallback = true, [CallerMemberName] string name = "")
             where TProperty : class
         {
             if (Overrides.TryGetValue(name, out var result))
@@ -73,7 +73,7 @@ namespace Migoto.Log.Parser
                 previous.SetLastUser(owner);
         }
 
-        public void Set<TProperty>(TProperty? value, bool warnIfExists = true, [CallerMemberName] string name = null)
+        public void Set<TProperty>(TProperty? value, bool warnIfExists = true, [CallerMemberName] string name = "")
             where TProperty : IOwned<TOwner>
         {
             if (value == null)

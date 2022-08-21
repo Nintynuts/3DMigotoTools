@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Migoto.Log.Parser
+﻿namespace Migoto.Log.Parser
 {
     public class Frame
     {
@@ -11,6 +9,7 @@ namespace Migoto.Log.Parser
         }
 
         public uint Index { get; }
-        public ICollection<DrawCall> DrawCalls { get; }
+
+        public IIndexedCollection<DrawCall> DrawCalls { get; }
     }
 }

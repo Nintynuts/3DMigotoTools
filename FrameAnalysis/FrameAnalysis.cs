@@ -10,7 +10,9 @@ namespace Migoto.Log.Parser
 {
     using ApiCalls;
     using ApiCalls.Draw;
+
     using Assets;
+
     using Slots;
 
     public class FrameAnalysis
@@ -43,6 +45,7 @@ namespace Migoto.Log.Parser
         private Frame frame = new Frame(0); // For Present post logic
         private uint drawCallNo = 0;
         private uint apiCallNo = 0;
+        private uint drawCallBase = 0;
         private DrawCall drawCall = new DrawCall(0, null);
         private IApiCall? apiCall = null;
 
@@ -130,21 +133,31 @@ namespace Migoto.Log.Parser
         {
             var replacements = new List<(Regex find, string with)> { 
                 //Simplify scope name
-                (find:new Regex(@"[cC]onfigs\\(.*?)\.ini"), with: "$1"),
+                (find:new Regex(@"((?:[cC]ommand[lL]ist|[oO]verride|[sS]hader)\\)(?:[cC]onfigs\\)?(.*?)\.ini\\_?"), with: "$1$2\\"),
+                // Move ini param override note after value into brackets
+                (find: new Regex(@"(ini param override) (= .*)"), with: "$2 // $1"),
+                // Move assignment type note with after assignment
+                (find:new Regex(@"[\r\n]+\s+(?=copying by|performing)"), with: " // "),
+                // Add space before if inspection
+                (find:new Regex(@"(?<=\)):"), with: " //"),
                 // Combine command and inspection 
-                (find:new Regex(@"(?<!pre|post) (\[.*?\] .*)(?<!else \{|true|false)(?:[\r\n]+\s+)(?!else|\[|\})([^ ].*)(?=[\r\n])"), with: " $1 : $2"),
+                (find:new Regex(@"[\r\n]+\s+= "), with: " // "),
                 // Copy scope after pre / post
-                (find: new Regex(@"(pre|post) {(?=[\r\n]+\s+(\[.*?\]))"), with: "$1 $2 {"),
+                (find: new Regex(@"\b(pre|post)\b \{(?=[\r\n\s]+(\[.*?\]))"), with: "$1 $2 {"),
                 // Remove repeated scopes
-                (find: new Regex(@"(?<!pre|post) (\[.*?\])"), with: ""),
+                (find: new Regex(@"(?<!\b(?:pre|post)\b) (\[.*?\])"), with: ""),
                 // Remove zero fractionals
                 (find: new Regex(@"(\d+)\.0+\b"), with: "$1"),
-                // Simplify assignment inspection
-                (find: new Regex(@"(?<=:)( ini param override)? ="), with: ""),
                 // Remove constant inspection
-                (find: new Regex(@" = (-?\d+(?:\.\d+)?) : \1"), with: " = $1"),
-                // Remove Empty Else-EndIf
+                (find: new Regex(@" = (-?\d+(?:\.\d+)?) // \1"), with: " = $1"),
+                // Remove double comment
+                (find: new Regex(@"(// .*? )//"), with: "$1"),
+                // Remove Empty Else-EndIf and EndIf
                 (find: new Regex(@"(?:([\r\n]\s+)else \{\1\})? endif"), with: ""),
+                // Combine Run and Command path
+                (find: new Regex(@"(?<=run )= ((?:builtin)?commandlist|customshader)(?:_|\\)?(.*)[\r\n\s]+(?:pre|post)?\s(?=\[\1(?:\\\w+)?\\?\2)"), with: ""),
+                // Simplify to += or -=
+                (find: new Regex(@"(\$\w+) = \1 ([+-])"), with:"$1 $2="),
             };
 
             foreach (var dc in Frames.SelectMany(f => f.DrawCalls))
@@ -162,6 +175,7 @@ namespace Migoto.Log.Parser
                 {
                     LogUnhandledForFrame();
                     frameNo = thisFrameNo;
+                    drawCallBase = drawCallNo;
                     frame = new Frame(thisFrameNo);
                     Frames.Add(frame);
                     // New frame must be new draw call, but for some reason 3Dmigoto doesn't increment the draw call number
@@ -179,7 +193,7 @@ namespace Migoto.Log.Parser
                     LogUnhandledForDrawCall();
                 drawCallNo = thisDrawCallNo;
                 apiCallNo = 0;
-                drawCall = new DrawCall(thisDrawCallNo, drawCall);
+                drawCall = new DrawCall(thisDrawCallNo - drawCallBase, drawCall);
                 frame.DrawCalls.Add(drawCall);
             }
         }
@@ -277,7 +291,7 @@ namespace Migoto.Log.Parser
             Type slotType;
 
             string index = captures["index"].Value;
-            var useList = apiCall is IMultiSlot && uint.TryParse(index, out var _);
+            var useList = apiCall is IMultiSlot<IResourceSlot> && uint.TryParse(index, out var _);
 
             if (useList)
             {

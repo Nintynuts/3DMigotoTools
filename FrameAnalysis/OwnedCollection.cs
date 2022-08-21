@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Migoto.Log.Parser
 {
-    internal class OwnedCollection<TOwner, TItem> : ICollection<TItem>
+    internal class OwnedCollection<TOwner, TItem> : IIndexedCollection<TItem>
         where TOwner : class
         where TItem : IOwned<TOwner>
     {
@@ -45,10 +45,17 @@ namespace Migoto.Log.Parser
 
         public bool IsReadOnly => false;
 
+        public TItem this[int index] => items[index];
+
         public bool Contains(TItem item) => items.Contains(item);
 
         public IEnumerator<TItem> GetEnumerator() => items.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => items.GetEnumerator();
+    }
+
+    public interface IIndexedCollection<T> : ICollection<T>
+    {
+        T this[int index] { get; }
     }
 }

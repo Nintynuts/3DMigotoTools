@@ -43,7 +43,9 @@ namespace Migoto.ShaderFixes
             {
                 var hash = ulong.Parse(file.Name.Substring(0, file.Name.IndexOf('-')), NumberStyles.HexNumber);
                 using var reader = file.TryOpenRead();
-                string firstLine = reader.ReadLine();
+                string? firstLine = reader?.ReadLine();
+                if (firstLine == null)
+                    continue; // can't open or empty file
                 var name = firstLine.StartsWith("//") ? firstLine[2..] : hash.ToString();
                 ShaderNames.Add(new ShaderFix(file.Name, hash, name.Trim()));
                 ParseFile(file, new[] { hash });
@@ -67,6 +69,8 @@ namespace Migoto.ShaderFixes
         private void ParseFile(FileInfo file, IEnumerable<ulong> hashes)
         {
             using var reader = file.TryOpenRead();
+            if (reader == null)
+                return;
             var shader = reader.ReadToEnd();
 
             includes.AddRange(includePattern.Matches(shader).Select(m => new ShaderUsage<string>(m.Groups["path"].Value, hashes)));

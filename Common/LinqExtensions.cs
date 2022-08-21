@@ -55,9 +55,13 @@ namespace System.Linq
         public static void RemoveAll<T>(this ICollection<T> items, Func<T, bool> filter)
             => items.Where(filter).ToList().ForEach(i => items.Remove(i));
 
-        public static string Delimit(this IEnumerable<string> items, char delimiter) => items.Delimit($"{delimiter}");
+        public static string Delimit(this IEnumerable<string> items, char delimiter)
+            => items.Delimit($"{delimiter}");
 
         public static string Delimit(this IEnumerable<string> items, string delimiter)
-            => items.Any() ? items.Aggregate((a, b) => $"{a}{delimiter}{b}") : string.Empty;
+            => items.Any() ? string.Join(delimiter, items) : string.Empty;
+
+        public static IEnumerable<T> Indices<T>(this IReadOnlyList<T> items, IEnumerable<int> indices)
+            => indices.Select(i => items[i]);
     }
 }

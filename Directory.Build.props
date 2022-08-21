@@ -1,0 +1,10 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net5</TargetFramework>
+    <Version>0.1.0</Version>
+    <Authors>Nintynuts</Authors>
+    <Nullable>Enable</Nullable>
+  </PropertyGroup>
+
+</Project>

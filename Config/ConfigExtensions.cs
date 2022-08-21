@@ -15,7 +15,7 @@ namespace Migoto.Config
             => parser.Sections.Where(k => k.SectionName.StartsWith(name, StringComparison.OrdinalIgnoreCase));
 
         public static T? GetValue<T>(this ConfigSection section, string key)
-            => (T)section.Keys.FirstOrDefault(k => k.IsMatch<T>(key))?.ValueRaw;
+            => (T?)section.Keys.FirstOrDefault(k => k.IsMatch<T>(key))?.ValueRaw;
 
         public static IEnumerable<T> GetValues<T>(this ConfigSection section, string key)
             => section.Keys.Where(k => k.IsMatch<T>(key)).Select(k => (T)k.ValueRaw);

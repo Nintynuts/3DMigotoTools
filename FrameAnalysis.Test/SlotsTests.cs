@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Migoto.Log.Parser.Test
 {
 
     using ApiCalls;
+
     using Slots;
 
     [TestClass]
@@ -20,10 +22,10 @@ namespace Migoto.Log.Parser.Test
 
             multiSlot1.Merge(multiSlot2);
 
-            IMultiSlot multiSlot = multiSlot1;
+            IMultiSlot<TestSlot> multiSlot = multiSlot1;
             Assert.AreEqual(0u, multiSlot.StartSlot);
             Assert.AreEqual(8u, multiSlot.NumSlots);
-            Assert.AreEqual(2, multiSlot1.PointersMerged.Count);
+            Assert.AreEqual(2, multiSlot1.PointersMerged?.Count);
             Assert.AreEqual(2, multiSlot1.MergeWarnings.Count());
         }
 
@@ -57,22 +59,22 @@ namespace Migoto.Log.Parser.Test
 
     internal class TestDeferred : IDeferred<TestDeferred, TestDeferred>
     {
-        public TestDeferred(TestDeferred fallback = null)
+        public TestDeferred(TestDeferred? fallback = null)
         {
             Deferred = new Deferred<TestDeferred, TestDeferred>(this, fallback);
             Fallback = fallback;
         }
 
-        public TestDeferred Fallback { get; }
+        public TestDeferred? Fallback { get; }
 
         public Deferred<TestDeferred, TestDeferred> Deferred { get; }
 
-        public TestSlots TestSlots { get => Deferred.Get<TestSlots>(); set => Deferred.Set(value); }
+        public TestSlots? TestSlots { get => Deferred.Get<TestSlots>(); set => Deferred.Set(value); }
     }
 
     internal class TestSlots : MultiSlotBase<TestSlots, TestSlot, TestSlots, TestDeferred, TestDeferred>
     {
-        public TestSlots(uint startSlot, uint numSlots, Func<int, bool> pattern = null, bool setByMerge = false)
+        public TestSlots(uint startSlot, uint numSlots, Func<int, bool>? pattern = null, bool setByMerge = false)
         {
             StartSlot = startSlot;
             NumSlots = setByMerge ? 0 : numSlots;
@@ -85,18 +87,18 @@ namespace Migoto.Log.Parser.Test
             {
                 Enumerable.Range((int)StartSlot, (int)numSlots)
                     .Select(i => pattern?.Invoke(i) != false ? construct(i) : null)
-                    .Where(i => i != null).ForEach(method);
+                    .ExceptNull().ForEach(method);
             }
         }
 
 
-        public IEnumerable<TestSlot> Slots => SlotsSet;
+        public IEnumerable<TestSlot?> Slots => SlotsSet;
 
         private static readonly List<int> globalSlotsMask = new List<int>();
 
         public override List<int> GlobalSlotsMask => globalSlotsMask;
 
-        protected override Deferred<TestDeferred, TestDeferred> PreviousDeferred => Owner.Fallback?.Deferred;
+        protected override Deferred<TestDeferred, TestDeferred>? PreviousDeferred => Owner?.Fallback?.Deferred;
     }
 
     internal class TestSlot : Slot<TestSlots>

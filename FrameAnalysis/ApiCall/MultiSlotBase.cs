@@ -5,11 +5,11 @@ namespace Migoto.Log.Parser.ApiCalls
 {
     using Slots;
 
-    public interface IMultiSlot
+    public interface IMultiSlot<out TSlot>
     {
         List<int> GlobalSlotsMask { get; }
 
-        IEnumerable<IResourceSlot> Slots { get; }
+        IReadOnlyList<TSlot?> Slots { get; }
 
         uint StartSlot { get; }
         uint NumSlots { get; }
@@ -17,7 +17,7 @@ namespace Migoto.Log.Parser.ApiCalls
         List<ulong>? PointersMerged { get; }
     }
 
-    public abstract class MultiSlotBase<This, TSlot, TSlotOwner, TOwner, TFallback> : IOwned<TOwner>, IOverriden<TOwner>, IMergable<This>, IMultiSlot, INamed
+    public abstract class MultiSlotBase<This, TSlot, TSlotOwner, TOwner, TFallback> : IOwned<TOwner>, IOverriden<TOwner>, IMergable<This>, IMultiSlot<TSlot>, INamed
         where This : MultiSlotBase<This, TSlot, TSlotOwner, TOwner, TFallback>, TSlotOwner
         where TSlot : class, ISlot<TSlotOwner>, IOwned<TSlotOwner>
         where TSlotOwner : class
@@ -37,13 +37,13 @@ namespace Migoto.Log.Parser.ApiCalls
         public uint StartSlot { get; set; }
 
         protected uint NumSlots { get; set; }
-        uint IMultiSlot.NumSlots => NumSlots;
+        uint IMultiSlot<TSlot>.NumSlots => NumSlots;
 
         protected ulong Pointer { get; set; }
-        ulong IMultiSlot.Pointer => Pointer;
+        ulong IMultiSlot<TSlot>.Pointer => Pointer;
 
         public List<ulong>? PointersMerged { get; protected set; }
-        List<ulong>? IMultiSlot.PointersMerged => PointersMerged;
+        List<ulong>? IMultiSlot<TSlot>.PointersMerged => PointersMerged;
 
         protected ICollection<TSlot> SlotsPopulated { get; }
 
@@ -57,7 +57,7 @@ namespace Migoto.Log.Parser.ApiCalls
 
         protected abstract Deferred<TFallback, TOwner>? PreviousDeferred { get; }
 
-        IEnumerable<IResourceSlot> IMultiSlot.Slots => SlotsSet.Cast<IResourceSlot>();
+        IReadOnlyList<TSlot?> IMultiSlot<TSlot>.Slots => SlotsSet;
 
         public TOwner? Owner { get; private set; }
 

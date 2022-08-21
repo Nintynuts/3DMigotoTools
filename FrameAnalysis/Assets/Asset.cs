@@ -26,8 +26,8 @@ namespace Migoto.Log.Parser.Assets
         public string Hex => $"{Hash:X8}";
 
         public IEnumerable<IResource> Uses => uses;
-        public void Register(IResource resource) => uses.Add(resource);
-        public void Unregister(IResource resource) => uses.Remove(resource);
+        public virtual void Register(IResource resource) => uses.Add(resource);
+        public virtual void Unregister(IResource resource) => uses.Remove(resource);
 
         public List<(int index, List<IResourceSlot> slots)> Slots
             => Uses.OfType<IResourceSlot>().GroupBy(s => s.Index).OrderBy(g => g.Key).Select(g => (index: g.Key, slots: g.ToList())).ToList();

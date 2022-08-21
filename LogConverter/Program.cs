@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -28,6 +27,7 @@ namespace Migoto.Log.Converter
             if (input.Any() && input.First() is { } path && path.Contains("."))
             {
                 inputFile = new FileInfo(path);
+                ui.Event($"Loading: {path}");
                 input = input.Skip(1);
             }
 
@@ -43,10 +43,10 @@ namespace Migoto.Log.Converter
                     if (GetD3DXPath(inputFile, out inputFile))
                         loadedData.GetMetadata(inputFile);
                 }
-                else if (inputFile.Extension == FrameAnalysis.Extension && GetValidLog(inputFile, out inputFile))
+                else if (inputFile.Extension == FrameAnalysis.Extension && GetValidLog(inputFile, out inputFile) is { } frameAnalysis)
                 {
-                    OutputLog(loadedData, inputFile);
-                    LogFunctions(inputFile);
+                    OutputLog(loadedData, frameAnalysis, inputFile);
+                    LogFunctions(inputFile, frameAnalysis);
                     return;
                 }
             }
@@ -56,8 +56,8 @@ namespace Migoto.Log.Converter
                 switch (func.ToLower())
                 {
                     case "manual":
-                        if (GetValidLog(null, out var logFile) && logFile != null)
-                            LogFunctions(logFile);
+                        if (GetValidLog(null, out var logFile) is { } frameAnalysis && logFile != null)
+                            LogFunctions(logFile, frameAnalysis);
                         break;
                     case "auto":
                         if (GetD3DXPath(inputFile, out inputFile))
@@ -74,27 +74,31 @@ namespace Migoto.Log.Converter
 
         private static void WatchFolder(FileInfo inputFile)
         {
+            loadedData.GetSplitFile();
             var auto = new AutoConverter(inputFile.Directory!, loadedData, ui);
             ui.WaitForCancel("Watching for new FrameAnalysis export");
             auto.Quit();
         }
 
-        private static bool GetValidLog(FileInfo? initial, [NotNullWhen(true)] out FileInfo file)
+        private static FrameAnalysis? GetValidLog(FileInfo? initial, [NotNullWhen(true)] out FileInfo file)
         {
             return ui.GetFile($"frame analysis log file (log{FrameAnalysis.Extension})", FrameAnalysis.Extension, initial, out file)
-                && loadedData.LoadLog(file, ui.Event);
+                && loadedData.LoadLog(file, ui.Event) is { } frameAnalysis ? frameAnalysis : null;
         }
 
-        private static void LogFunctions(FileInfo inputFile)
+        private static void LogFunctions(FileInfo inputFile, FrameAnalysis frameAnalysis)
         {
-            while (loadedData.FrameAnalysis != null && ui.GetInfo("function to perform", out var func))
+            if (frameAnalysis.Frames.Count > 1)
+                loadedData.GetSplitFile();
+
+            while (ui.GetInfo("function to perform", out var func))
             {
                 switch (func.ToLower())
                 {
                     case "log":
-                        OutputLog(loadedData, inputFile); break;
+                        OutputLog(loadedData, frameAnalysis, inputFile); break;
                     case "asset":
-                        OutputAsset(loadedData.FrameAnalysis, inputFile.Directory!); break;
+                        OutputAsset(frameAnalysis, inputFile.Directory!); break;
                     case "set-columns":
                         loadedData.GetColumnSelection(); break;
                     case "get-metadata":
@@ -105,13 +109,10 @@ namespace Migoto.Log.Converter
             }
         }
 
-        private static void OutputLog(MigotoData data, FileInfo file)
+        private static void OutputLog(MigotoData data, FrameAnalysis frameAnalysis, FileInfo file)
         {
             var outputFile = file.ChangeExt(CSV.Extension);
-            using var output = outputFile.TryOpenWrite(ui);
-            if (output == null)
-                return;
-            LogWriter.Write(data, output);
+            new LogWriter(data, frameAnalysis, suffix => outputFile.SuffixName(suffix).TryOpenWrite(ui)).Write();
             ui.Event("Export Log complete");
         }
 
@@ -138,21 +139,15 @@ namespace Migoto.Log.Converter
                     continue;
                 }
 
-                using var assetFile = folder.File(asset.Hex + CSV.Extension).TryOpenWrite(ui);
                 try
                 {
-                    if (assetFile != null)
-                    {
-                        AssetWriter.Write(asset, assetFile);
-                        ui.Event($"Export of {asset.Hex} complete");
-                        continue;
-                    }
+                    new AssetWriter(asset).Write(() => folder.File(asset.Hex + CSV.Extension).TryOpenWrite(ui));
+                    ui.Event($"Export of {asset.Hex} complete");
                 }
-                catch (Exception e)
+                catch
                 {
-                    ui.Event(e.ToString());
+                    ui.Event($"Export of {asset.Hex} failed");
                 }
-                ui.Event($"Export of {asset.Hex} failed:");
             }
             ui.Event("Export Asset aborted");
         }
