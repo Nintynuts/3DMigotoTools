@@ -20,7 +20,10 @@
                 return;
             base.Add(item);
             if (!owner.GlobalSlotsMask.Contains(item.Index))
+            {
                 owner.GlobalSlotsMask.Add(item.Index);
+                owner.GlobalSlotsMask.Sort();
+            }
         }
     }
 }

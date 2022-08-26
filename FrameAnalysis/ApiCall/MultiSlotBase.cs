@@ -50,14 +50,12 @@ namespace Migoto.Log.Parser.ApiCalls
         private List<int> SlotsMask
             => slotsMask ??= Enumerable.Range((int)StartSlot, (int)NumSlots).ToList();
 
-        protected List<TSlot?> SlotsSet
-            => slotsSet ??= GlobalSlotsMask.OrderBy(i => i).Select(GetSlot).ToList();
-
         public abstract List<int> GlobalSlotsMask { get; }
 
         protected abstract Deferred<TFallback, TOwner>? PreviousDeferred { get; }
 
-        IReadOnlyList<TSlot?> IMultiSlot<TSlot>.Slots => SlotsSet;
+        public IReadOnlyList<TSlot?> Slots
+            => slotsSet ??= Enumerable.Range(0, GlobalSlotsMask.Max() + 1).Select(GetSlot).ToList();
 
         public TOwner? Owner { get; private set; }
 
@@ -72,7 +70,7 @@ namespace Migoto.Log.Parser.ApiCalls
 
         private TSlot? GetPrevious(int index)
         {
-            var slot = PreviousDeferred?.OfType<This>().FirstOrDefault()?.SlotsSet.Find(s => s?.Index == index);
+            var slot = PreviousDeferred?.OfType<This>().FirstOrDefault()?.Slots.FirstOrDefault(s => s?.Index == index);
             slot?.SetLastUser((This)this);
             return slot;
         }

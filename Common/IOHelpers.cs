@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace System.IO
 {
@@ -20,10 +21,21 @@ namespace System.IO
         }
 
         public static FileInfo SuffixName(this FileInfo file, string suffix)
-            => file.Directory!.File(file.Name + suffix);
+            => file.Directory!.File($"{Path.GetFileNameWithoutExtension(file.FullName)}{suffix}{file.Extension}");
 
         public static FileInfo ChangeExt(this FileInfo file, string newExtension)
             => file.Directory!.File(file.Name.Replace(file.Extension, newExtension));
+
+        public static FileInfo? ValidatePath(string path, string ext, bool @throw = true)
+        {
+            var illegal = new Regex("[\"*/<>?|]");
+
+            path = illegal.Replace(path, "").Trim();
+            var file = new FileInfo(path);
+            return !file.Exists ? @throw ? throw new InvalidDataException("File doesn't exist") : null
+                 : !path.EndsWith(ext) ? @throw ? throw new InvalidDataException("File has wrong extension") : null
+                 : file;
+        }
 
         public static StreamWriter? TryOpenWrite(this FileInfo file, IUserInterface? ui = null)
         {

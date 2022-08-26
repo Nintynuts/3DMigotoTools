@@ -92,9 +92,9 @@ namespace Migoto.Log.Converter
 
         private static ShaderContext? GetShaderContext(IApiCall methodBase, DrawCall drawCall) => methodBase switch
         {
-            IShaderCall shaderCall => drawCall.Shader(shaderCall.ShaderType),
-            IInputAssembler => drawCall.Shader(ShaderType.Vertex),
-            IOutputMerger => drawCall.Shader(ShaderType.Pixel),
+            IShaderCall shaderCall => drawCall.Shaders[shaderCall.ShaderType],
+            IInputAssembler => drawCall.Shaders[ShaderType.Vertex],
+            IOutputMerger => drawCall.Shaders[ShaderType.Pixel],
             _ => null
         };
 

@@ -62,6 +62,6 @@ namespace System.Linq
             => items.Any() ? string.Join(delimiter, items) : string.Empty;
 
         public static IEnumerable<T> Indices<T>(this IReadOnlyList<T> items, IEnumerable<int> indices)
-            => indices.Select(i => items[i]);
+            => indices.Max() < items.Count ? indices.Select(i => items[i]) : throw new InvalidOperationException("Max index exceeds item count");
     }
 }

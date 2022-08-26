@@ -7,7 +7,7 @@ namespace Migoto.Log.Parser.ApiCalls
 
     public interface IShaderCall
     {
-        ShaderType ShaderType { get; }
+        ShaderType ShaderType { get; set; }
     }
 
     public abstract class ShaderMultiSlot<This, TSlot> : MultiSlotBase<This, TSlot, IApiCall, DrawCall, ShaderContext>, IApiCall, IShaderCall
@@ -26,6 +26,6 @@ namespace Migoto.Log.Parser.ApiCalls
 
         public override List<int> GlobalSlotsMask => UsedSlots.GetOrAdd(ShaderType);
 
-        protected override Deferred<ShaderContext, DrawCall>? PreviousDeferred => Owner?.Fallback?.Shader(ShaderType).Deferred;
+        protected override Deferred<ShaderContext, DrawCall>? PreviousDeferred => Owner?.Fallback?.Shaders[ShaderType].Deferred;
     }
 }

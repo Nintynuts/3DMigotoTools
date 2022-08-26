@@ -41,9 +41,9 @@ namespace Migoto.Log.Parser
         public Dictionary<uint, Asset> Assets { get; } = new Dictionary<uint, Asset>();
         public Dictionary<ulong, Shader> Shaders { get; } = new Dictionary<ulong, Shader>();
 
-        private uint frameNo = 0;
-        private Frame frame = new Frame(0); // For Present post logic
-        private uint drawCallNo = 0;
+        private uint frameNo = 1;
+        private Frame frame = new Frame(1);
+        private uint drawCallNo = 1;
         private uint apiCallNo = 0;
         private uint drawCallBase = 0;
         private DrawCall drawCall = new DrawCall(0, null);
@@ -95,12 +95,16 @@ namespace Migoto.Log.Parser
 
         private void ParseLine(string line)
         {
+            var indexMatch = indexPattern.Match(line);
+            if (indexMatch.Success)
+                ProcessFrameAndDrawCall(indexMatch.Groups);
+
             var apiCallMatch = methodPattern.Match(line);
             if (apiCallMatch.Success)
             {
-                var indexMatch = indexPattern.Match(line);
-                if (indexMatch.Success)
-                    ProcessFrameAndDrawCall(indexMatch.Groups);
+                // If we have 'logic' written out before any API calls, then it's the [Present] logic.
+                if (drawCall.Logic?.Length > 0)
+                    InitNewDrawCall(drawCallNo);
 
                 ProcessApiCall(apiCallMatch.Groups);
                 return;
@@ -175,27 +179,27 @@ namespace Migoto.Log.Parser
                 {
                     LogUnhandledForFrame();
                     frameNo = thisFrameNo;
-                    drawCallBase = drawCallNo;
+                    drawCallBase = drawCallNo - 1;
                     frame = new Frame(thisFrameNo);
                     Frames.Add(frame);
                     // New frame must be new draw call, but for some reason 3Dmigoto doesn't increment the draw call number
-                    InitNewDrawCall(thisDrawCallNo);
+                    InitNewDrawCall(thisDrawCallNo, newFrame: true);
                 }
                 else if (thisDrawCallNo != drawCallNo)
                 {
                     InitNewDrawCall(thisDrawCallNo);
                 }
             }
+        }
 
-            void InitNewDrawCall(uint thisDrawCallNo)
-            {
-                if (drawCall != null)
-                    LogUnhandledForDrawCall();
-                drawCallNo = thisDrawCallNo;
-                apiCallNo = 0;
-                drawCall = new DrawCall(thisDrawCallNo - drawCallBase, drawCall);
-                frame.DrawCalls.Add(drawCall);
-            }
+        void InitNewDrawCall(uint thisDrawCallNo, bool newFrame = false)
+        {
+            if (drawCall != null)
+                LogUnhandledForDrawCall();
+            drawCallNo = thisDrawCallNo;
+            apiCallNo = 0;
+            drawCall = newFrame ? new(0, null) : new(thisDrawCallNo - drawCallBase, drawCall);
+            frame.DrawCalls.Add(drawCall);
         }
 
         private void ProcessApiCall(GroupCollection captures)
@@ -253,10 +257,12 @@ namespace Migoto.Log.Parser
             }
             if (apiCallType.Is<IDraw>())
                 apiCallType = typeof(IDraw);
-            if (shaderType.HasValue && shaderContextProps.TryGetValue(apiCallType, out var property))
+            if (shaderType != null && shaderContextProps.TryGetValue(apiCallType, out var property))
             {
-                var shaderCtx = drawCall.Shader(shaderType.Value);
-                apiCall.GetType().GetProperty(nameof(ShaderType))?.SetValue(apiCall, shaderType.Value);
+                if (apiCall is IShaderCall shaderCall)
+                    shaderCall.ShaderType = shaderType.Value;
+
+                var shaderCtx = drawCall.Shaders[shaderType.Value];
                 property.SetTo(shaderCtx, apiCall);
                 //apiCall = property.GetFrom<IApiCall>(shaderCtx);
             }
@@ -287,37 +293,32 @@ namespace Migoto.Log.Parser
             }
 
             var apiCallType = apiCall.GetType();
-            PropertyInfo? slots;
-            Type slotType;
 
             string index = captures["index"].Value;
-            var useList = apiCall is IMultiSlot<IResourceSlot> && uint.TryParse(index, out var _);
 
-            if (useList)
+            if (apiCall is IMultiSlot<IResourceSlot> multislot && uint.TryParse(index, out var _))
             {
-                slots = apiCallType.GetProperties().FirstOrDefault(p => p.IsGeneric(typeof(ICollection<>)) && p.FirstType().Is<IResourceSlot>());
+                var slots = apiCallType.GetProperties().FirstOrDefault(p => p.IsGeneric(typeof(ICollection<>)) && p.FirstType().Is<IResourceSlot>());
                 if (slots == null)
                     throw new InvalidOperationException($"{apiCall.Name} doesn't have a slots property.");
-                slotType = slots.FirstType();
-            }
-            else
-            {
-                slots = apiCallType.GetProperty(index) ?? apiCallType.GetProperties().OfType<IResource>().SingleOrDefault();
-                if (slots == null || slots.PropertyType.IsInterface)
-                    throw new InvalidOperationException($"{apiCall.Name} doesn't have a concrete slot property called {index}.");
-                slotType = slots.PropertyType;
-            }
+                var slotType = slots.FirstType();
 
-            var slot = slotType.Construct<Resource>();
-            PopulateResourceSlot(captures, slot);
+                var slot = slotType.Construct<IResourceSlot>();
+                PopulateResourceSlot(captures, slot);
 
-            if (useList)
-            {
                 slot.SetFromString(nameof(Resource.Index), captures["index"].Value);
                 slots.Add(apiCall, slot);
             }
             else
             {
+                var slots = apiCallType.GetProperty(index) ?? apiCallType.GetProperties().OfType<Resource>().SingleOrDefault();
+                if (slots == null || slots.PropertyType.IsInterface)
+                    throw new InvalidOperationException($"{apiCall.Name} doesn't have a concrete slot property called {index}.");
+                var slotType = slots.PropertyType;
+
+                var slot = slotType.Construct<Resource>();
+                PopulateResourceSlot(captures, slot);
+
                 slot.SetOwner(apiCall);
                 slots.SetTo(apiCall, slot);
             }
@@ -339,7 +340,7 @@ namespace Migoto.Log.Parser
                 if (!Assets.TryGetValue(hash, out var asset) || asset is Unknown)
                 {
                     var unknown = asset as Unknown;
-                    asset = slot is ResourceView ? new Texture() : (Asset)new Buffer();
+                    asset = slot is ResourceView ? new Texture() : new Buffer();
                     RegisterAsset(hash, asset, unknown);
                 }
 

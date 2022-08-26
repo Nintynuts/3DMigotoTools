@@ -22,7 +22,7 @@ namespace Migoto.Log.Parser
             Index = index;
             Fallback = previous;
             Deferred = new Deferred<DrawCall, DrawCall>(this, previous);
-            Shaders = Enums.Values<ShaderType>().ToDictionary(s => s, s => new ShaderContext(this, previous?.Shader(s)));
+            Shaders = Enums.Values<ShaderType>().ToDictionary(s => s, s => new ShaderContext(this, previous?.Shaders[s]));
 
             Mappings = new OwnedCollection<DrawCall, Map>(this);
             Unmappings = new OwnedCollection<DrawCall, Unmap>(this);
@@ -68,9 +68,7 @@ namespace Migoto.Log.Parser
 
         public IASetIndexBuffer? SetIndexBuffer { get => Deferred.Get<IASetIndexBuffer>(); set => Deferred.Set(value); }
 
-        internal Dictionary<ShaderType, ShaderContext> Shaders { get; }
-
-        public ShaderContext Shader(ShaderType type) => Shaders[type];
+        public IReadOnlyDictionary<ShaderType, ShaderContext> Shaders { get; }
 
         public void SetOwner(Frame? newOwner) => Owner = newOwner;
 

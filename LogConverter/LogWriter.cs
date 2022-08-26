@@ -16,7 +16,7 @@ namespace Migoto.Log.Converter
     using IColumns = IColumns<Parser.DrawCall>;
 
     [Flags]
-    public enum DrawCallColumns
+    public enum DrawCallColumnGroups
     {
         Index = 0,
         IA = VB | IB,
@@ -56,7 +56,7 @@ namespace Migoto.Log.Converter
         private class AssetColumnSet : ColumnSet<DrawCall, IResource>
         {
             public AssetColumnSet(string name, Func<DrawCall, IMultiSlot<IResourceSlot>?> provider, IEnumerable<int> columns)
-                : base(name, dc => provider(dc)?.Slots, GetValue, columns) { }
+                : base(name.ToLower(), dc => provider(dc)?.Slots, GetValue, columns) { }
 
             public static string GetValue(DrawCall ctx, IResource? item)
             {
@@ -91,7 +91,7 @@ namespace Migoto.Log.Converter
         private class ShaderColumn : Column<DrawCall, Shader?>
         {
             public ShaderColumn(string name, Func<DrawCall, Shader?> provider)
-                : base(name, provider, GetValue) { }
+                : base(name.ToLower(), provider, GetValue) { }
 
             public static string GetValue(DrawCall dc, Shader? shader)
                 => $"\"{GetText(shader).Trim()}\"";
@@ -124,71 +124,71 @@ namespace Migoto.Log.Converter
             this.outputSrc = outputSrc;
             frames = frameAnalysis.Frames;
             splitFrames = data.SplitFrames;
-            var columnGroups = data.ColumnGroups;
-            var shaderColumns = data.ShaderColumns;
+            if (data.ColumnData == null)
+                throw new InvalidDataException("Columns haven't been set");
+
+            var columnGroups = data.ColumnData.Groups;
+            var shaderColumns = data.ColumnData.ShaderColumns;
 
             var logicSplit = new Regex(@"(?<=[\r\n])(?=\bpost\b)");
 
             columns = new List<IColumns> { new Column("Draw", dc => dc.Index) };
 
-            if (columnGroups.HasFlag(DrawCallColumns.VB))
+            if (columnGroups.HasFlag(DrawCallColumnGroups.VB))
                 columns.AddRange(new IColumns[] {
                     new UintColumn("vb_", dc => dc.Draw?.StartVertex),
                     new UintColumn("vb#", dc => dc.Draw?.VertexCount),
                     new AssetColumnSet("vb", dc => dc.SetVertexBuffers, IASetVertexBuffers.UsedSlots),
                 });
 
-            if (columnGroups.HasFlag(DrawCallColumns.IB))
+            if (columnGroups.HasFlag(DrawCallColumnGroups.IB))
                 columns.AddRange(new IColumns[] {
                     new UintColumn("ib_", dc => dc.Draw?.StartIndex),
                     new UintColumn("ib#", dc => dc.Draw?.IndexCount),
                     new HashColumn("ib", dc => dc.SetIndexBuffer?.Buffer),
                 });
 
-            if (columnGroups.HasFlag(DrawCallColumns.VB) || columnGroups.HasFlag(DrawCallColumns.IB))
+            if (columnGroups.HasFlag(DrawCallColumnGroups.VB) || columnGroups.HasFlag(DrawCallColumnGroups.IB))
                 columns.AddRange(new IColumns[] {
                     new UintColumn("inst_", dc => dc.Draw?.StartInstance),
                     new UintColumn("inst#", dc => dc.Draw?.InstanceCount),
                     new Column("Topology", dc => dc.PrimitiveTopology?.Topology),
                 });
 
-            IEnumerable<IColumns> GetShaderColumns((ShaderType shaderType, ShaderColumns columns, int[] indices) _)
+            IEnumerable<IColumns> GetShaderColumns(OutputColumns.Shader column)
             {
-                var shaderType = _.shaderType;
-                var subColumns = _.columns;
-                var indices = _.indices;
-                char x = shaderType.ToString().ToLower()[0];
-                yield return new ShaderColumn($"{x}s", dc => (dc.Shader(shaderType).SetShader?.Shader));
+                var (shaderType, subColumns, indices) = column;
+                char type = shaderType.ToString()[0];
+                yield return new ShaderColumn($"{type}S", dc => (dc.Shaders[shaderType].SetShader?.Shader));
+
                 if (subColumns.HasFlag(ShaderColumns.CB))
-                    yield return new AssetColumnSet($"{x}s-cb", dc => dc.Shader(shaderType).SetConstantBuffers, indices.Length > 0 ? indices : SetConstantBuffers.UsedSlots.GetOrAdd(shaderType));
+                    yield return AssetColumn(ShaderColumns.CB, s => s.SetConstantBuffers, SetConstantBuffers.UsedSlots);
 
                 if (subColumns.HasFlag(ShaderColumns.T))
-                    yield return new AssetColumnSet($"{x}s-t", dc => dc.Shader(shaderType).SetShaderResources, indices.Length > 0 ? indices : SetShaderResources.UsedSlots.GetOrAdd(shaderType));
+                    yield return AssetColumn(ShaderColumns.T, s => s.SetShaderResources, SetShaderResources.UsedSlots);
+
+                AssetColumnSet AssetColumn(ShaderColumns column, Func<ShaderContext, IMultiSlot<IResourceSlot>?> provider, Dictionary<ShaderType, List<int>> usedSlots)
+                    => new($"{type}S-{column}", dc => provider(dc.Shaders[shaderType]), indices.Count > 0 ? indices : usedSlots.GetOrAdd(shaderType));
             }
 
-            columns.AddRange(shaderColumns.OrderBy(s => s.type).SelectMany(GetShaderColumns));
+            columns.AddRange(shaderColumns.OrderBy(s => s.Type).SelectMany(GetShaderColumns));
 
-            if (columnGroups.HasFlag(DrawCallColumns.RT))
+            if (columnGroups.HasFlag(DrawCallColumnGroups.RT))
                 columns.Add(new AssetColumnSet("o", dc => dc.SetRenderTargets, OMSetRenderTargets.UsedSlots));
 
-            if (columnGroups.HasFlag(DrawCallColumns.D))
+            if (columnGroups.HasFlag(DrawCallColumnGroups.D))
                 columns.Add(new HashColumn("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset));
 
-            if (columnGroups.HasFlag(DrawCallColumns.Logic))
+            if (columnGroups.HasFlag(DrawCallColumnGroups.Logic))
                 columns.Add(new Column("Pre,Post", dc => $"\"{logicSplit.Replace(dc.Logic ?? "", "\",\"")}\""));
         }
 
         public void Write()
         {
-            switch (splitFrames)
-            {
-                case SplitFrames.Yes or SplitFrames.Both:
-                    Enumerable.Range(0, frames.Count).ForEach(WriteSingle);
-                    break;
-                case SplitFrames.No or SplitFrames.Both:
-                    WriteAll();
-                    break;
-            }
+            if (splitFrames is SplitFrames.Yes or SplitFrames.Both)
+                Enumerable.Range(0, frames.Count).ForEach(WriteSingle);
+            if (splitFrames is SplitFrames.No or SplitFrames.Both)
+                WriteAll();
         }
 
         private void WriteAll()

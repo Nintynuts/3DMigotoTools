@@ -9,6 +9,7 @@ namespace Migoto.Log.Parser.Assets
     using Config;
     using ShaderFixes;
     using Slots;
+
     using static ApiCalls.ShaderType;
 
     public class Shader : IHash, IConfigOverride<ulong>
@@ -22,7 +23,7 @@ namespace Migoto.Log.Parser.Assets
 
         public List<DrawCall> References { get; } = new List<DrawCall>();
 
-        public IEnumerable<ShaderContext> Contexts => References.Select(r => r.Shader(ShaderType));
+        public IEnumerable<ShaderContext> Contexts => References.Select(r => r.Shaders[ShaderType]);
 
         [TypeConverter(typeof(LongHashTypeConverter))]
         public ulong Hash { get; set; }
@@ -31,7 +32,7 @@ namespace Migoto.Log.Parser.Assets
 
         public string Name => Fix?.Name ?? Override?.FriendlyName ?? string.Empty;
 
-        private ICollection<Shader> Partner(ShaderType type) => References.Select(r => r.Shader(type).SetShader).Select(c => c?.Shader).ExceptNull().Consolidate();
+        private ICollection<Shader> Partner(ShaderType type) => References.Select(r => r.Shaders[type].SetShader).Select(c => c?.Shader).ExceptNull().Consolidate();
         public ICollection<Shader> PartnerVS => Partner(Vertex);
         public ICollection<Shader> PartnerPS => Partner(Pixel);
         public ICollection<Shader> PartnerHS => Partner(Hull);
@@ -47,6 +48,6 @@ namespace Migoto.Log.Parser.Assets
         public ShaderFix? Fix { get; set; }
 
         private ICollection<T> PartnerResource<T>(Func<ShaderContext, IEnumerable<Resource>?> selector)
-            => References.SelectMany(r => selector(r.Shader(ShaderType))?.Select(rv => rv.Asset).OfType<T>() ?? Enumerable.Empty<T>()).Consolidate();
+            => References.SelectMany(r => (selector(r.Shaders[ShaderType])?.Select(rv => rv.Asset).OfType<T>()).OrEmpty()).Consolidate();
     }
 }

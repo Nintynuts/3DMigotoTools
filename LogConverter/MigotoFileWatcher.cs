@@ -1,33 +1,49 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Migoto.Log.Converter
 {
     using Config;
 
-    using Parser;
-
-    class AutoConverter
+    class MigotoFileWatcher
     {
         private readonly MigotoData data;
-        private readonly IUserInterface ui;
+        private readonly Dictionary<Action<DirectoryInfo>, FileSystemEventHandler> handlers = new();
         private readonly FileSystemWatcher frameAnalysisWatcher;
-        private readonly FileSystemEventHandler frameAnalyisCreated;
         private readonly FileSystemWatcher iniFileWatcher;
         private readonly FileSystemEventHandler configCreated;
         private readonly FileSystemEventHandler configChanged;
 
-        public AutoConverter(DirectoryInfo root, MigotoData data, IUserInterface ui)
+        public event Action<DirectoryInfo> FrameAnalysisCreated
+        {
+            add => frameAnalysisWatcher.Created += Register(value);
+            remove => frameAnalysisWatcher.Created -= Unregister(value);
+        }
+
+        private FileSystemEventHandler Register(Action<DirectoryInfo> value)
+        {
+            var handler = IOHelpers.Handler(value);
+            handlers[value] = handler;
+            return handler;
+        }
+
+        private FileSystemEventHandler Unregister(Action<DirectoryInfo> value)
+        {
+            var handler = handlers[value];
+            handlers.Remove(value);
+            return handler;
+        }
+
+        public MigotoFileWatcher(DirectoryInfo root, MigotoData data)
         {
             this.data = data;
-            this.ui = ui;
             frameAnalysisWatcher = new FileSystemWatcher(root.FullName, "FrameAnalysis-*")
             {
                 NotifyFilter = NotifyFilters.DirectoryName,
                 EnableRaisingEvents = true
             };
-            frameAnalysisWatcher.Created += frameAnalyisCreated = IOHelpers.Handler<DirectoryInfo>(FrameAnalysisCreated);
-
             iniFileWatcher = new FileSystemWatcher(root.FullName, $"*{ConfigFile.Extension}")
             {
                 NotifyFilter = NotifyFilters.FileName,
@@ -39,27 +55,11 @@ namespace Migoto.Log.Converter
 
         public void Quit()
         {
-            frameAnalysisWatcher.Created -= frameAnalyisCreated;
+            handlers.ForEach(h => frameAnalysisWatcher.Created -= h.Value);
             frameAnalysisWatcher.Dispose();
             iniFileWatcher.Changed -= configChanged;
             iniFileWatcher.Created -= configCreated;
             iniFileWatcher.Dispose();
-        }
-
-        private void FrameAnalysisCreated(DirectoryInfo directory)
-        {
-            var inputFile = directory.File($"log{FrameAnalysis.Extension}");
-            var outputFile = inputFile.ChangeExt(CSV.Extension);
-            var logFile = directory.File("conversion.log");
-
-            using var logging = logFile.TryOpenWrite(ui);
-            if (logging != null && data.LoadLog(inputFile, msg => logging.WriteLine(msg)) is { } frameAnalysis)
-            {
-                new LogWriter(data, frameAnalysis, suffix => outputFile.SuffixName(suffix).TryOpenWrite(ui)).Write();
-                ui.Event($"Conversion success: {directory.Name}");
-                return;
-            }
-            ui.Event($"Conversion failure: {directory.Name}");
         }
 
         private void ConfigCreated(FileInfo file)

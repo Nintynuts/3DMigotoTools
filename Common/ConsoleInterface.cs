@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
-using System.Timers;
+﻿using System.Timers;
 
 namespace System.IO
 {
@@ -8,11 +6,13 @@ namespace System.IO
 
     public interface IUserInterface
     {
-        bool GetInfo(string prompt, out string info);
+        string? GetInfo(string prompt);
 
-        bool GetFile(string prompt, string ext, FileInfo? initial, [NotNullWhen(true)] out FileInfo file);
+        FileInfo? GetFile(string prompt, string ext);
 
-        bool GetValid<T>(string prompt, T? initial, out T result, Func<string, (bool valid, string? msg, T corrected)> validator);
+        T? GetValid<T>(string prompt, Func<string, (T? result, string? msg)> validator) where T : class;
+
+        T? GetValid<T>(string prompt, Func<string, (T? result, string? msg)> validator) where T : struct;
 
         void Event(string message);
 
@@ -66,7 +66,7 @@ namespace System.IO
             hintMessage = msg;
         }
 
-        private bool Request(string message, string? initial, out string result)
+        private string? Request(string message, string? initial)
         {
             int index = 0;
             string text = initial ?? string.Empty;
@@ -158,8 +158,7 @@ namespace System.IO
             }
             OffsetCursor(text.Length - index); // Put cursor to end
             Hint(); // Clear hint
-            result = text;
-            return stroke.Key != ConsoleKey.Escape;
+            return stroke.Key != ConsoleKey.Escape ? text : null;
         }
 
         public void Event(string message)
@@ -178,41 +177,48 @@ namespace System.IO
             Write(message + nbsp);
         }
 
-        public bool GetInfo(string message, out string result)
-        {
-            return Request(message, null, out result);
-        }
+        public string? GetInfo(string message) => Request(message, null);
 
-        public bool GetValid<T>(string prompt, T? initial, [NotNullWhen(true)] out T result, Func<string, (bool valid, string? msg, T corrected)> validator)
+        public T? GetValid<T>(string prompt, Func<string, (T? result, string? msg)> validator) where T : class
         {
             ClearLine();
-            bool checkedInput = false;
-            result = initial!;
-            var resultStr = initial?.ToString();
-            while ((initial != null && resultStr != null && !checkedInput) || Request(prompt, resultStr, out resultStr))
+            string? input = null;
+            while ((input = Request(prompt, input)) is not null)
             {
-                var (valid, msg, corrected) = validator(resultStr);
-                result = corrected;
-                if (valid && result != null)
+                var (result, msg) = validator(input.Trim());
+                if (result != null && msg == null)
                 {
                     Hint();
-                    return true;
+                    return result;
                 }
                 Hint($"{msg}, please try again.");
-                checkedInput = true;
             }
-            return false;
+            return default;
         }
 
-        public bool GetFile(string prompt, string ext, FileInfo? initial, [NotNullWhen(true)] out FileInfo file)
+        public T? GetValid<T>(string prompt, Func<string, (T? result, string? msg)> validator) where T : struct
         {
-            var illegal = new Regex("[\"*/<>?|]");
-            return GetValid($"path of {prompt}", initial, out file, resultStr =>
+            ClearLine();
+            string? input = null;
+            while ((input = Request(prompt, input)) is not null)
             {
-                resultStr = illegal.Replace(resultStr, "").Trim();
-                var file = new FileInfo(resultStr);
-                var msg = !file.Exists ? "File doesn't exist" : !resultStr.EndsWith(ext) ? "File has wrong extension" : null;
-                return (msg == null, msg!, file);
+                var (result, msg) = validator(input.Trim());
+                if (result != null && msg == null)
+                {
+                    Hint();
+                    return result;
+                }
+                Hint($"{msg}, please try again.");
+            }
+            return default;
+        }
+
+        public FileInfo? GetFile(string prompt, string ext)
+        {
+            return GetValid<FileInfo>($"path of {prompt}", path =>
+            {
+                try { return (IOHelpers.ValidatePath(path, ext), null); }
+                catch (InvalidDataException ide) { return (null, ide.Message); }
             });
         }
 

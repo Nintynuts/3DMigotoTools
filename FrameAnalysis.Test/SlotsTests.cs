@@ -91,9 +91,6 @@ namespace Migoto.Log.Parser.Test
             }
         }
 
-
-        public IEnumerable<TestSlot?> Slots => SlotsSet;
-
         private static readonly List<int> globalSlotsMask = new List<int>();
 
         public override List<int> GlobalSlotsMask => globalSlotsMask;

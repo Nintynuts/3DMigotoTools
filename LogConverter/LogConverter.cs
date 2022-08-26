@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -10,111 +10,219 @@ namespace Migoto.Log.Converter
 
     internal class LogConverter
     {
-        private readonly ConsoleInterface ui;
-        private readonly MigotoData loadedData;
+        private readonly IUserInterface ui;
+        private readonly MigotoData loadedData = new();
 
-        public LogConverter(IEnumerable<string> input)
+        public LogConverter(IUserInterface ui, IEnumerable<string> input)
         {
-            ui = new ConsoleInterface();
-            loadedData = new MigotoData(ui);
+            this.ui = ui;
 
-            FileInfo? inputFile = null;
-
-            if (input.Any() && input.First() is { } path && path.Contains("."))
+            if (input.Any())
             {
-                inputFile = new FileInfo(path);
-                ui.Event($"Loading: {path}");
+                var path = input.First();
                 input = input.Skip(1);
+
+                if (IOHelpers.ValidatePath(path, FrameAnalysis.Extension, @throw: false) is { } logFile)
+                    ExportSingleLog(logFile, input);
+                else if (IOHelpers.ValidatePath(path, MigotoData.D3DX, @throw: false) is { } d3dxFile)
+                    LoadMetadata(d3dxFile, input);
+                else
+                    throw new InvalidDataException("Unknown file type");
             }
-
-            if (inputFile == null)
-                ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, inputFile, out inputFile);
-
-            loadedData.GetColumnSelection(input);
-
-            if (inputFile != null)
+            else if (ui.GetFile(MigotoData.D3DX, MigotoData.D3DX) is { } d3dxFile)
             {
-                if (inputFile.Extension == MigotoData.D3DX)
+                LoadMetadata(d3dxFile);
+            }
+        }
+
+        private void ExportSingleLog(FileInfo logFile, IEnumerable<string> input)
+        {
+            InitialiseColumns(input);
+
+            var possibleRoot = logFile.Directory?.Parent;
+            if (possibleRoot?.GetFiles(MigotoData.D3DX).FirstOrDefault() is { } d3dxFile)
+                GetMetadata(d3dxFile);
+
+            if (LoadLog(logFile, ui.Event) is { } frameAnalysis)
+            {
+                OutputLog(frameAnalysis, logFile);
+                LogFunctions(logFile, frameAnalysis);
+            }
+        }
+
+        private void LoadMetadata(FileInfo d3dxFile, IEnumerable<string>? input = null)
+        {
+            ui.Event($"Loading: {d3dxFile.FullName}");
+            GetMetadata(d3dxFile);
+
+            InitialiseColumns(input);
+
+            ChooseMode(d3dxFile);
+        }
+
+        private void InitialiseColumns(IEnumerable<string>? input = null)
+        {
+            OutputColumns? columnData = null;
+            if (input?.Any() == true)
+            {
+                try
                 {
-                    if (GetD3DXPath(inputFile, out inputFile))
-                        loadedData.GetMetadata(inputFile);
+                    columnData = OutputColumns.Parse(input);
                 }
-                else if (inputFile.Extension == FrameAnalysis.Extension && GetValidLog(inputFile, out inputFile) is { } frameAnalysis)
+                catch (InvalidDataException ide)
                 {
-                    OutputLog(loadedData, frameAnalysis, inputFile);
-                    LogFunctions(inputFile, frameAnalysis);
-                    return;
+                    ui.Event($"Invalid columns: {ide.Message}");
                 }
             }
+            columnData ??= RequestColumns();
+            loadedData.SetColumns(columnData);
+        }
 
-            while (ui.GetInfo("mode of operation", out var func))
+        private void ChooseMode(FileInfo? d3dxFile = null)
+        {
+            while (ui.GetInfo("mode of operation") is { } func)
             {
                 switch (func.ToLower())
                 {
                     case "manual":
-                        if (GetValidLog(null, out var logFile) is { } frameAnalysis && logFile != null)
+                        if (RequestLogFile() is { } logFile && LoadLog(logFile, ui.Event) is { } frameAnalysis)
                             LogFunctions(logFile, frameAnalysis);
                         break;
                     case "auto":
-                        if (GetD3DXPath(inputFile, out inputFile))
-                            WatchFolder(inputFile);
+                        d3dxFile ??= RequestD3dxFile();
+                        if (d3dxFile != null)
+                            WatchFolder(d3dxFile);
                         break;
                 }
             }
         }
 
-        private bool GetD3DXPath(FileInfo? initial, [NotNullWhen(true)] out FileInfo d3dxPath)
-        {
-            return ui.GetFile(MigotoData.D3DX, MigotoData.D3DX, initial, out d3dxPath);
-        }
-
-        private void WatchFolder(FileInfo inputFile)
-        {
-            loadedData.GetSplitFile();
-            var auto = new AutoConverter(inputFile.Directory!, loadedData, ui);
-            ui.WaitForCancel("Watching for new FrameAnalysis export");
-            auto.Quit();
-        }
-
-        private FrameAnalysis? GetValidLog(FileInfo? initial, [NotNullWhen(true)] out FileInfo file)
-        {
-            return ui.GetFile($"frame analysis log file (log{FrameAnalysis.Extension})", FrameAnalysis.Extension, initial, out file)
-                && loadedData.LoadLog(file, ui.Event) is { } frameAnalysis ? frameAnalysis : null;
-        }
-
-        private void LogFunctions(FileInfo inputFile, FrameAnalysis frameAnalysis)
+        private void LogFunctions(FileInfo logFile, FrameAnalysis frameAnalysis)
         {
             if (frameAnalysis.Frames.Count > 1)
-                loadedData.GetSplitFile();
+                loadedData.SplitFrames = RequestSplitFrames();
 
-            while (ui.GetInfo("function to perform", out var func))
+            while (ui.GetInfo("function to perform") is { } func)
             {
                 switch (func.ToLower())
                 {
                     case "log":
-                        OutputLog(loadedData, frameAnalysis, inputFile); break;
+                        OutputLog(frameAnalysis, logFile); break;
                     case "asset":
-                        OutputAsset(frameAnalysis, inputFile.Directory!); break;
+                        OutputAsset(frameAnalysis, logFile.Directory!); break;
                     case "set-columns":
-                        loadedData.GetColumnSelection(); break;
+                        loadedData.SetColumns(RequestColumns()); break;
                     case "get-metadata":
-                        if (GetD3DXPath(null, out var d3dxPath))
-                            loadedData.GetMetadata(d3dxPath);
+                        if (RequestD3dxFile() is { } d3dxFile)
+                            GetMetadata(d3dxFile);
                         break;
                 }
             }
         }
 
-        private void OutputLog(MigotoData data, FrameAnalysis frameAnalysis, FileInfo file)
+        private void WatchFolder(FileInfo d3dxFile)
+        {
+            loadedData.SplitFrames = RequestSplitFrames();
+            var auto = new MigotoFileWatcher(d3dxFile.Directory!, loadedData);
+            auto.FrameAnalysisCreated += (directory) =>
+            {
+                ui.Event($"Converting: {directory.Name}");
+                var logFile = directory.File($"log{FrameAnalysis.Extension}");
+
+                var infoFile = directory.File("conversion.log");
+                using var infoStream = infoFile.TryOpenWrite(ui);
+                if (infoStream != null && LoadLog(logFile, msg => infoStream.WriteLine(msg)) is { } frameAnalysis)
+                {
+                    OutputLog(frameAnalysis, logFile);
+                    return;
+                }
+                ui.Event($"Conversion failure");
+            };
+            ui.WaitForCancel("Watching for new FrameAnalysis export");
+            auto.Quit();
+        }
+
+        private FileInfo? RequestD3dxFile()
+            => ui.GetFile(MigotoData.D3DX, MigotoData.D3DX);
+
+        private FileInfo? RequestLogFile()
+            => ui.GetFile($"frame analysis log file (log{FrameAnalysis.Extension})", FrameAnalysis.Extension);
+
+        private OutputColumns? RequestColumns() => ui.GetValid<OutputColumns>("column selection (default: IA VS PS OM Logic)", input =>
+        {
+            if (input.Length == 0)
+                return (OutputColumns.Default, null);
+
+            try
+            {
+                return (OutputColumns.Parse(input.Split(' ', StringSplitOptions.RemoveEmptyEntries)), null);
+            }
+            catch (InvalidDataException ide)
+            {
+                return (null, ide.Message);
+            }
+        });
+
+        private SplitFrames RequestSplitFrames()
+        {
+            const string prompt = "whether you want to split frames into separate files (Yes/No [default]/Both)";
+
+            return ui.GetValid(prompt, input =>
+            {
+                if (input.Length == 0)
+                    return (SplitFrames.Both, null);
+
+                var splitMode = Enum.GetValues<SplitFrames>().Cast<SplitFrames?>().FirstOrDefault(v => v.ToString()?.StartsWith(input, StringComparison.OrdinalIgnoreCase) == true);
+
+                return (splitMode, splitMode.HasValue ? null : "Unrecognised option");
+            }) ?? SplitFrames.No;
+        }
+
+        public FrameAnalysis? LoadLog(FileInfo file, Action<string> logger)
+        {
+            ui.Event("Waiting for log to be readable...");
+            using var frameAnalysisFile = file.TryOpenRead()!;
+            ui.Event("Reading log...");
+            var frameAnalysis = new FrameAnalysis(frameAnalysisFile, logger);
+
+            if (!frameAnalysis.Parse())
+            {
+                logger("Provided file is not a 3DMigoto FrameAnalysis log file");
+                return null;
+            }
+            loadedData.LinkOverrides(frameAnalysis);
+            loadedData.LinkShaderFixes(frameAnalysis);
+
+            return frameAnalysis;
+        }
+
+        private void GetMetadata(FileInfo d3dx)
+        {
+            loadedData.RootFolder = d3dx.Directory!;
+            ui.Status("Reading metadata from ini config files...");
+            var config = loadedData.Config;
+            config.Read(d3dx, reset: true);
+            ui.Event($"TextureOverrides: {config.TextureOverrides.Count()}\nShaderOverrides: {config.ShaderOverrides.Count()}");
+
+            if (config.OverrideDirectory is null)
+                return; // Unlikely to happen, as this is in the default d3dx.ini
+
+            ui.Status("Reading metadata from shader fixes...");
+            var shaderFixes = loadedData.ShaderFixes;
+            shaderFixes.Scrape(loadedData.RootFolder.SubDirectory(config.OverrideDirectory));
+            ui.Event($"Shaders: {shaderFixes.ShaderNames.Count}\nTexture Registers: {shaderFixes.Textures.Count}\nConstant Buffer Registers {shaderFixes.ConstantBuffers.Count}");
+        }
+
+        private void OutputLog(FrameAnalysis frameAnalysis, FileInfo file)
         {
             var outputFile = file.ChangeExt(CSV.Extension);
-            new LogWriter(data, frameAnalysis, suffix => outputFile.SuffixName(suffix).TryOpenWrite(ui)).Write();
-            ui.Event("Export Log complete");
+            new LogWriter(loadedData, frameAnalysis, suffix => outputFile.SuffixName(suffix).TryOpenWrite(ui)).Write();
+            ui.Event($"Conversion success");
         }
 
         private void OutputAsset(FrameAnalysis frameAnalysis, DirectoryInfo folder)
         {
-            while (ui.GetInfo("a resource hash to dump lifecycle for", out var hex))
+            while (ui.GetInfo("a resource hash to dump lifecycle for") is { } hex)
             {
                 uint hash;
                 try
