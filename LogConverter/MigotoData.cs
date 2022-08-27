@@ -66,14 +66,11 @@ namespace Migoto.Log.Converter
     {
         public const string D3DX = "d3dx.ini";
 
-        public OutputColumns? ColumnData { get; private set; }
+        public OutputColumns? ColumnData { get; set; }
         public DirectoryInfo? RootFolder { get; set; }
         public Config Config { get; } = new Config();
         public ShaderFixes ShaderFixes { get; } = new ShaderFixes();
         public SplitFrames SplitFrames { get; set; }
-
-        public void SetColumns(OutputColumns? columnData = null)
-            => ColumnData = columnData ?? OutputColumns.Default;
 
         public void LinkOverrides(FrameAnalysis frameAnalysis)
         {

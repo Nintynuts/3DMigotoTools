@@ -22,10 +22,12 @@ namespace Migoto.Log.Converter
                 var path = input.First();
                 input = input.Skip(1);
 
+                loadedData.ColumnData = InitialiseColumns(input);
+
                 if (IOHelpers.ValidatePath(path, FrameAnalysis.Extension, @throw: false) is { } logFile)
-                    ExportSingleLog(logFile, input);
+                    ExportSingleLog(logFile);
                 else if (IOHelpers.ValidatePath(path, MigotoData.D3DX, @throw: false) is { } d3dxFile)
-                    LoadMetadata(d3dxFile, input);
+                    LoadMetadata(d3dxFile);
                 else
                     throw new InvalidDataException("Unknown file type");
             }
@@ -35,47 +37,40 @@ namespace Migoto.Log.Converter
             }
         }
 
-        private void ExportSingleLog(FileInfo logFile, IEnumerable<string> input)
+        private OutputColumns? InitialiseColumns(IEnumerable<string> input)
         {
-            InitialiseColumns(input);
-
-            var possibleRoot = logFile.Directory?.Parent;
-            if (possibleRoot?.GetFiles(MigotoData.D3DX).FirstOrDefault() is { } d3dxFile)
-                GetMetadata(d3dxFile);
-
-            if (LoadLog(logFile, ui.Event) is { } frameAnalysis)
-            {
-                OutputLog(frameAnalysis, logFile);
-                LogFunctions(logFile, frameAnalysis);
-            }
-        }
-
-        private void LoadMetadata(FileInfo d3dxFile, IEnumerable<string>? input = null)
-        {
-            ui.Event($"Loading: {d3dxFile.FullName}");
-            GetMetadata(d3dxFile);
-
-            InitialiseColumns(input);
-
-            ChooseMode(d3dxFile);
-        }
-
-        private void InitialiseColumns(IEnumerable<string>? input = null)
-        {
-            OutputColumns? columnData = null;
-            if (input?.Any() == true)
+            if (input.Any() == true)
             {
                 try
                 {
-                    columnData = OutputColumns.Parse(input);
+                    return OutputColumns.Parse(input);
                 }
                 catch (InvalidDataException ide)
                 {
                     ui.Event($"Invalid columns: {ide.Message}");
                 }
             }
-            columnData ??= RequestColumns();
-            loadedData.SetColumns(columnData);
+            return null;
+        }
+
+        private void ExportSingleLog(FileInfo logFile)
+        {
+            var possibleRoot = logFile.Directory?.Parent;
+            if (possibleRoot?.GetFiles(MigotoData.D3DX).FirstOrDefault() is { } d3dxFile)
+                GetMetadata(d3dxFile);
+
+            if (LoadLog(logFile, ui.Event) is { } frameAnalysis)
+            {
+                OutputLogManual(frameAnalysis, logFile);
+                LogFunctions(logFile, frameAnalysis);
+            }
+        }
+
+        private void LoadMetadata(FileInfo d3dxFile)
+        {
+            ui.Event($"Loading: {d3dxFile.FullName}");
+            GetMetadata(d3dxFile);
+            ChooseMode(d3dxFile);
         }
 
         private void ChooseMode(FileInfo? d3dxFile = null)
@@ -89,9 +84,7 @@ namespace Migoto.Log.Converter
                             LogFunctions(logFile, frameAnalysis);
                         break;
                     case "auto":
-                        d3dxFile ??= RequestD3dxFile();
-                        if (d3dxFile != null)
-                            WatchFolder(d3dxFile);
+                        WatchFolder(d3dxFile);
                         break;
                 }
             }
@@ -99,19 +92,16 @@ namespace Migoto.Log.Converter
 
         private void LogFunctions(FileInfo logFile, FrameAnalysis frameAnalysis)
         {
-            if (frameAnalysis.Frames.Count > 1)
-                loadedData.SplitFrames = RequestSplitFrames();
-
             while (ui.GetInfo("function to perform") is { } func)
             {
                 switch (func.ToLower())
                 {
                     case "log":
-                        OutputLog(frameAnalysis, logFile); break;
+                        OutputLogManual(frameAnalysis, logFile); break;
                     case "asset":
                         OutputAsset(frameAnalysis, logFile.Directory!); break;
                     case "set-columns":
-                        loadedData.SetColumns(RequestColumns()); break;
+                        loadedData.ColumnData = RequestColumns(); break;
                     case "get-metadata":
                         if (RequestD3dxFile() is { } d3dxFile)
                             GetMetadata(d3dxFile);
@@ -120,9 +110,14 @@ namespace Migoto.Log.Converter
             }
         }
 
-        private void WatchFolder(FileInfo d3dxFile)
+        private void WatchFolder(FileInfo? d3dxFile)
         {
+            d3dxFile ??= RequestD3dxFile();
+            if (d3dxFile == null || (loadedData.ColumnData ??= RequestColumns()) == null)
+                return;
+
             loadedData.SplitFrames = RequestSplitFrames();
+
             var auto = new MigotoFileWatcher(d3dxFile.Directory!, loadedData);
             auto.FrameAnalysisCreated += (directory) =>
             {
@@ -148,7 +143,7 @@ namespace Migoto.Log.Converter
         private FileInfo? RequestLogFile()
             => ui.GetFile($"frame analysis log file (log{FrameAnalysis.Extension})", FrameAnalysis.Extension);
 
-        private OutputColumns? RequestColumns() => ui.GetValid<OutputColumns>("column selection (default: IA VS PS OM Logic)", input =>
+        private OutputColumns? RequestColumns() => ui.GetValid("column selection (default: IA VS PS OM Logic)", input =>
         {
             if (input.Length == 0)
                 return (OutputColumns.Default, null);
@@ -159,24 +154,19 @@ namespace Migoto.Log.Converter
             }
             catch (InvalidDataException ide)
             {
-                return (null, ide.Message);
+                return ((OutputColumns?)null, ide.Message);
             }
         });
 
-        private SplitFrames RequestSplitFrames()
+        private SplitFrames RequestSplitFrames() => ui.GetValid("whether you want to split frames into separate files (Yes/No [default]/Both)", input =>
         {
-            const string prompt = "whether you want to split frames into separate files (Yes/No [default]/Both)";
+            if (input.Length == 0)
+                return (SplitFrames.No, null);
 
-            return ui.GetValid(prompt, input =>
-            {
-                if (input.Length == 0)
-                    return (SplitFrames.Both, null);
+            var splitMode = Enum.GetValues<SplitFrames>().Cast<SplitFrames?>().FirstOrDefault(v => v.ToString()?.StartsWith(input, StringComparison.OrdinalIgnoreCase) == true);
 
-                var splitMode = Enum.GetValues<SplitFrames>().Cast<SplitFrames?>().FirstOrDefault(v => v.ToString()?.StartsWith(input, StringComparison.OrdinalIgnoreCase) == true);
-
-                return (splitMode, splitMode.HasValue ? null : "Unrecognised option");
-            }) ?? SplitFrames.No;
-        }
+            return (splitMode, splitMode.HasValue ? null : "Unrecognised option");
+        }) ?? SplitFrames.No;
 
         public FrameAnalysis? LoadLog(FileInfo file, Action<string> logger)
         {
@@ -211,6 +201,14 @@ namespace Migoto.Log.Converter
             var shaderFixes = loadedData.ShaderFixes;
             shaderFixes.Scrape(loadedData.RootFolder.SubDirectory(config.OverrideDirectory));
             ui.Event($"Shaders: {shaderFixes.ShaderNames.Count}\nTexture Registers: {shaderFixes.Textures.Count}\nConstant Buffer Registers {shaderFixes.ConstantBuffers.Count}");
+        }
+
+        private void OutputLogManual(FrameAnalysis frameAnalysis, FileInfo logFile)
+        {
+            if (frameAnalysis.Frames.Count > 1)
+                loadedData.SplitFrames = RequestSplitFrames();
+            if ((loadedData.ColumnData ??= RequestColumns()) != null)
+                OutputLog(frameAnalysis, logFile);
         }
 
         private void OutputLog(FrameAnalysis frameAnalysis, FileInfo file)
