@@ -18,17 +18,17 @@ When running the application without passing a `log.txt` file argument, the foll
 
 ### Import metadata from ini files and shader fixes
 
-If running the application with a `d3dx.ini` path (or with a `log.txt` path from the original FrameAnalysis folder it was dumped into), the application will scrape:
-- `*.ini` files for Shader and Texture Override names to associate with hashes read from the frame analysis (plus `[Include]` files).
-- `*_replace.txt` for Shader, constant buffer and texure names to associate with registers (plus `#include` files).
+If running the application with a `d3dx.ini` path (or with a `log.txt` path from the original FrameAnalysis folder it was dumped into), the application will scrape names to associate with hashes:
+- `*.ini` files for Shader and Texture Overrides (plus `[Include]` files).
+- `*_replace.txt` for Shader, constant buffers and texure registers (plus `#include` files).
 
 > **_NOTE:_** The name in the `*_replace.txt` file takes prescedence over the `*.ini` override name.
 
-> **_NOTE:_** If you wish to reload the metadata while operating in `Manual` mode, the function `get-metadata` can be used.
+> **_NOTE:_** You can reload the metadata while in `Manual` mode with the `get-metadata` function.
 
 ### Auto Conversion (`Auto` mode)
 
-The tool can convert logs as they are generated automatically. This requires providing the `d3dx.ini` file path for your game.
+By providing the `d3dx.ini` file path for your game, the tool can convert logs as they are generated automatically.
 
 When a new FrameAnalysis folder is detected, it will generate a CSV and a conversion message log.
 
@@ -52,7 +52,7 @@ Messages may also appear for API calls that are supported, but the majority of t
 
 #### Generate Asset lifecycle (`Asset` function)
 
-By entering an asset hash (for a Buffer or Texture), a CSV file will be produced with every usage of that asset over the course of the log.
+By entering an asset hash (for a Buffer or Texture), a CSV file will be produced with every usage in the log.
 
 Where pipeline state re-use has been active, a distinct list of shaders used over the active period will be written to simplify the output, but be aware that the last use may be after other uses listed below it.
 
@@ -74,9 +74,9 @@ When using `analyse_options = hold` and analysing multiple frames the applicatio
 
 It is possible to customise the columns output by the program.
 
-These can be provided via the command line following the file path or you will be prompted to enter them when required.
+These can be provided via the command line following the file path or entered when required.
 
-> **_NOTE:_**  If you wish to change the columns being output while operating in `Manual` mode, the function `set-columns` can be used.
+> **_NOTE:_**  You can change the output columns in `Manual` mode with the `set-columns` function.
 
 The following column ids are valid:
 
@@ -93,7 +93,7 @@ The following column ids are valid:
 	- `D` : Depth Stencil hash
 - `Logic` : 3Dmigoto logic trace (for `ShaderOverride`s etc.), split into Pre and Post
 
-*Specific registers can be selected by suffixing with `:` and register numbers separated by commas (for Example `PS-T:1,3,7`) 
+*Output specific registers by suffixing with `:` and comma separated numbers (for Example `PS-T:1,3,7`) 
 
 If not specified, the output file will omit any numbered columns that contain no data (unused registers).
 
