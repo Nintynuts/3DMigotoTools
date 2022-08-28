@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Salaros.ConfigParser" Version="0.3.4" />
+    <Using Include="Salaros.Configuration"/>
   </ItemGroup>
 
   <ItemGroup>

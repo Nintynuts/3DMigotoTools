@@ -18,7 +18,7 @@ jobs:
     - name: Setup dotnet
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: '5.0.x'
+        dotnet-version: '6.0.x'
 
     - name: Install dependencies
       run: dotnet restore
@@ -33,4 +33,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Log-Converter-release
-        path: LogConverter/bin/Release/net5/
+        path: LogConverter/bin/Release/net6/

@@ -1,9 +1,8 @@
-﻿using Migoto.Log.Parser.ApiCalls;
+﻿namespace Migoto.Log.Parser.Slots;
 
-namespace Migoto.Log.Parser.Slots
+using ApiCalls;
+
+public class Sampler : Slot<IApiCall>
 {
-    public class Sampler : Slot<IApiCall>
-    {
-        public ulong Handle { get; set; }
-    }
+    public ulong Handle { get; set; }
 }

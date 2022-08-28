@@ -1,14 +1,11 @@
-﻿using System.Collections.Generic;
+﻿namespace Migoto.Log.Parser;
 
-namespace Migoto.Log.Parser
+public interface IMergable
 {
-    public interface IMergable
-    {
-        IEnumerable<string> MergeWarnings { get; }
-    }
+    IEnumerable<string> MergeWarnings { get; }
+}
 
-    public interface IMergable<T> : IMergable
-    {
-        void Merge(T value);
-    }
+public interface IMergable<T> : IMergable
+{
+    void Merge(T value);
 }

@@ -1,32 +1,27 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿namespace Migoto.Log.Parser.Assets;
 
-namespace Migoto.Log.Parser.Assets
+using ApiCalls;
+using Slots;
+
+public class Texture : Asset
 {
-    using ApiCalls;
+    private readonly List<IResourceSlot> outputSlots = new();
 
-    using Slots;
+    public bool IsRenderTarget => outputSlots.Any(s => s.Index >= 0);
 
-    public class Texture : Asset
+    public bool IsDepthStencil => outputSlots.Any(s => s.Index == -1);
+
+    public override void Register(IResource resource)
     {
-        private readonly List<IResourceSlot> outputSlots = new();
+        base.Register(resource);
+        if (resource is IResourceSlot { Owner: OMSetRenderTargets } outputSlot)
+            outputSlots.Add(outputSlot);
+    }
 
-        public bool IsRenderTarget => outputSlots.Any(s => s.Index >= 0);
-        public bool IsDepthStencil => outputSlots.Any(s => s.Index == -1);
-
-
-        public override void Register(IResource resource)
-        {
-            base.Register(resource);
-            if (resource is IResourceSlot { Owner: OMSetRenderTargets } outputSlot)
-                outputSlots.Add(outputSlot);
-        }
-
-        public override void Unregister(IResource resource)
-        {
-            base.Unregister(resource);
-            if (resource is IResourceSlot { Owner: OMSetRenderTargets } outputSlot)
-                outputSlots.Remove(outputSlot);
-        }
+    public override void Unregister(IResource resource)
+    {
+        base.Unregister(resource);
+        if (resource is IResourceSlot { Owner: OMSetRenderTargets } outputSlot)
+            outputSlots.Remove(outputSlot);
     }
 }

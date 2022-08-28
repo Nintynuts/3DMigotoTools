@@ -1,15 +1,14 @@
-﻿namespace Migoto.Log.Parser.ApiCalls
+﻿namespace Migoto.Log.Parser.ApiCalls;
+
+using Assets;
+
+public class IASetIndexBuffer : SingleSlot<Buffer>, IInputAssembler
 {
-    using Assets;
+    public IASetIndexBuffer(uint order) : base(order) { }
 
-    public class IASetIndexBuffer : SingleSlot<Buffer>, IInputAssembler
-    {
-        public IASetIndexBuffer(uint order) : base(order) { }
+    public ulong pIndexBuffer { get => Pointer; set => Pointer = value; }
+    public uint Format { get; set; }
+    public uint Offset { get; set; }
 
-        public ulong pIndexBuffer { get => Pointer; set => Pointer = value; }
-        public uint Format { get; set; }
-        public uint Offset { get; set; }
-
-        public Buffer? Buffer => Asset;
-    }
+    public Buffer? Buffer => Asset;
 }

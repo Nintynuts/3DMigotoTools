@@ -1,29 +1,28 @@
-﻿namespace Migoto.Log.Parser.ApiCalls
+﻿namespace Migoto.Log.Parser.ApiCalls;
+
+using Slots;
+
+internal class SlotCollection<TOwner, TSlot, TSlotOwner> : OwnedCollection<TSlotOwner, TSlot>
+    where TOwner : class, IMultiSlot<TSlot>, TSlotOwner
+    where TSlot : ISlot<TSlotOwner>, IOwned<TSlotOwner>
+    where TSlotOwner : class
 {
-    using Slots;
+    private readonly TOwner owner;
 
-    internal class SlotCollection<TOwner, TSlot, TSlotOwner> : OwnedCollection<TSlotOwner, TSlot>
-        where TOwner : class, IMultiSlot<TSlot>, TSlotOwner
-        where TSlot : ISlot<TSlotOwner>, IOwned<TSlotOwner>
-        where TSlotOwner : class
+    public SlotCollection(TOwner owner) : base(owner)
     {
-        private readonly TOwner owner;
+        this.owner = owner;
+    }
 
-        public SlotCollection(TOwner owner) : base(owner)
+    public override void Add(TSlot item)
+    {
+        if (item == null)
+            return;
+        base.Add(item);
+        if (!owner.GlobalSlotsMask.Contains(item.Index))
         {
-            this.owner = owner;
-        }
-
-        public override void Add(TSlot item)
-        {
-            if (item == null)
-                return;
-            base.Add(item);
-            if (!owner.GlobalSlotsMask.Contains(item.Index))
-            {
-                owner.GlobalSlotsMask.Add(item.Index);
-                owner.GlobalSlotsMask.Sort();
-            }
+            owner.GlobalSlotsMask.Add(item.Index);
+            owner.GlobalSlotsMask.Sort();
         }
     }
 }

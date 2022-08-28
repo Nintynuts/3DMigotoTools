@@ -1,22 +1,19 @@
-﻿
+﻿namespace Migoto.Log.Parser.Slots;
 
-namespace Migoto.Log.Parser.Slots
+using ApiCalls;
+using Assets;
+
+public interface IResource
 {
-    using ApiCalls;
-    using Assets;
+    Asset? Asset { get; }
 
-    public interface IResource
-    {
-        Asset? Asset { get; }
+    IApiCall? Owner { get; }
 
-        IApiCall? Owner { get; }
+    ulong Pointer { get; }
 
-        ulong Pointer { get; }
+    void UpdateAsset(Asset asset);
+}
 
-        void UpdateAsset(Asset asset);
-    }
-
-    public interface IResourceSlot : IResource, ISlot<IApiCall>, IOverriden<IApiCall>
-    {
-    }
+public interface IResourceSlot : IResource, ISlot<IApiCall>, IOverriden<IApiCall>
+{
 }

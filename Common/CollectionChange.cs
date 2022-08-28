@@ -1,16 +1,13 @@
-﻿using System.Linq;
+﻿namespace System.Collections.Generic;
 
-namespace System.Collections.Generic
+public struct CollectionChange<T>
 {
-    public struct CollectionChange<T>
+    public CollectionChange(IEnumerable<T>? oldItems, IEnumerable<T>? newItems)
     {
-        public CollectionChange(IEnumerable<T>? oldItems, IEnumerable<T>? newItems)
-        {
-            OldItems = oldItems.OrEmpty();
-            NewItems = newItems.OrEmpty();
-        }
-
-        public IEnumerable<T> OldItems { get; }
-        public IEnumerable<T> NewItems { get; }
+        OldItems = oldItems.OrEmpty();
+        NewItems = newItems.OrEmpty();
     }
+
+    public IEnumerable<T> OldItems { get; }
+    public IEnumerable<T> NewItems { get; }
 }

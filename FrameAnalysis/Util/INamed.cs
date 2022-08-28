@@ -1,7 +1,6 @@
-﻿namespace Migoto.Log.Parser
+﻿namespace Migoto.Log.Parser;
+
+public interface INamed
 {
-    public interface INamed
-    {
-        public string Name => GetType().Name;
-    }
+    public string Name => GetType().Name;
 }

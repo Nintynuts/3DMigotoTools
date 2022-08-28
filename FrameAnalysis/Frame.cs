@@ -1,15 +1,14 @@
-﻿namespace Migoto.Log.Parser
+﻿namespace Migoto.Log.Parser;
+
+public class Frame
 {
-    public class Frame
+    public Frame(uint index)
     {
-        public Frame(uint index)
-        {
-            Index = index;
-            DrawCalls = new OwnedCollection<Frame, DrawCall>(this);
-        }
-
-        public uint Index { get; }
-
-        public IIndexedCollection<DrawCall> DrawCalls { get; }
+        Index = index;
+        DrawCalls = new OwnedCollection<Frame, DrawCall>(this);
     }
+
+    public uint Index { get; }
+
+    public IIndexedCollection<DrawCall> DrawCalls { get; }
 }

@@ -1,34 +1,31 @@
-﻿using System.Collections.Generic;
+﻿namespace Migoto.Log.Parser.ApiCalls;
 
-namespace Migoto.Log.Parser.ApiCalls
+using Slots;
+
+public class OMSetRenderTargets : MultiSlot<OMSetRenderTargets, ResourceView>, IOutputMerger
 {
-    using Slots;
+    public OMSetRenderTargets(uint order) : base(order) { }
 
-    public class OMSetRenderTargets : MultiSlot<OMSetRenderTargets, ResourceView>, IOutputMerger
+    public uint NumViews { get => NumSlots; set => NumSlots = value; }
+    public ulong ppRenderTargetViews { get => Pointer; set => Pointer = value; }
+
+    public ICollection<ResourceView> RenderTargets => SlotsPopulated;
+
+    public override void Merge(OMSetRenderTargets value)
     {
-        public OMSetRenderTargets(uint order) : base(order) { }
+        base.Merge(value);
 
-        public uint NumViews { get => NumSlots; set => NumSlots = value; }
-        public ulong ppRenderTargetViews { get => Pointer; set => Pointer = value; }
-
-        public ICollection<ResourceView> RenderTargets => SlotsPopulated;
-
-        public override void Merge(OMSetRenderTargets value)
+        if (value.D != null)
         {
-            base.Merge(value);
-
-            if (value.D != null)
-            {
-                pDepthStencilView = value.pDepthStencilView;
-                D?.SetOwner(null);
-                D = value.D;
-                D.SetOwner(this);
-            }
+            pDepthStencilView = value.pDepthStencilView;
+            D?.SetOwner(null);
+            D = value.D;
+            D.SetOwner(this);
         }
-
-        public ulong pDepthStencilView { get; set; }
-        /// <summary> DepthStencil name in Log </summary>
-        public ResourceView? D { get; set; }
-        public ResourceView? DepthStencil => D;
     }
+
+    public ulong pDepthStencilView { get; set; }
+    /// <summary> DepthStencil name in Log </summary>
+    public ResourceView? D { get; set; }
+    public ResourceView? DepthStencil => D;
 }

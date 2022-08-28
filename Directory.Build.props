@@ -1,10 +1,35 @@
 <Project>
 
   <PropertyGroup>
-    <TargetFramework>net5</TargetFramework>
+    <TargetFramework>net6</TargetFramework>
     <Version>0.1.0</Version>
     <Authors>Nintynuts</Authors>
     <Nullable>Enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+    
+  <PropertyGroup Condition="$(Configuration) == 'Release'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="$(Configuration) == 'Debug'">    
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Using Include="System.Collections"/>
+    <Using Include="System.Collections.ObjectModel"/>
+    <Using Include="System.ComponentModel"/>
+    <Using Include="System.Globalization"/>
+    <Using Include="System.Reflection"/>
+    <Using Include="System.Text.RegularExpressions"/>
+  </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Roslynator.Analyzers" Version="4.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  
 </Project>

@@ -1,11 +1,10 @@
-﻿namespace Migoto.Log.Parser.Assets
+﻿namespace Migoto.Log.Parser.Assets;
+
+using Config;
+
+public interface IConfigOverride<THash> where THash : struct
 {
-    using Config;
+    THash Hash { get; }
 
-    public interface IConfigOverride<THash> where THash : struct
-    {
-        THash Hash { get; }
-
-        Override<THash>? Override { get; set; }
-    }
+    Override<THash>? Override { get; set; }
 }

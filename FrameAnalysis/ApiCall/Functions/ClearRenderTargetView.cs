@@ -1,9 +1,8 @@
-﻿namespace Migoto.Log.Parser.ApiCalls
+﻿namespace Migoto.Log.Parser.ApiCalls;
+
+public class ClearRenderTargetView : Clear
 {
-    public class ClearRenderTargetView : Clear
-    {
-        public ClearRenderTargetView(uint order) : base(order) { }
-        public ulong pRenderTargetView { get; set; }
-        public ulong ColorRGBA { get; set; }
-    }
+    public ClearRenderTargetView(uint order) : base(order) { }
+    public ulong pRenderTargetView { get; set; }
+    public ulong ColorRGBA { get; set; }
 }
