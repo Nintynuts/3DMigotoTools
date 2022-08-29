@@ -35,6 +35,7 @@ public enum SplitFrames
 {
     No,
     Yes,
+    Diff,
     Both,
 }
 
@@ -124,7 +125,7 @@ public class LogWriter
 
         var logicSplit = new Regex(@"(?<=[\r\n])(?=\bpost\b)");
 
-        columns = new List<IColumns> { new Column("Draw", dc => dc.Index) };
+        columns = new List<IColumns>();
 
         if (columnGroups.HasFlag(DrawCallColumnGroups.VB))
         {
@@ -178,12 +179,20 @@ public class LogWriter
             columns.Add(new HashColumn("oD", dc => dc.SetRenderTargets?.DepthStencil?.Asset));
 
         if (columnGroups.HasFlag(DrawCallColumnGroups.Logic))
-            columns.Add(new Column("Pre,Post", dc => $"\"{logicSplit.Replace(dc.Logic ?? "", "\",\"")}\""));
+            columns.Add(new Column<DrawCall, object>("Pre,Post", SplitLogic));
+
+        string SplitLogic(DrawCall dc)
+        {
+            var logic = dc.Logic;
+            return logic == null ? "," : // Empty
+                   logic.StartsWith("post") ? $",\"{logic}\"" : // Post only
+                   $"\"{logicSplit.Replace(logic, "\",\"")}\""; // Split
+        }
     }
 
     public void Write()
     {
-        if (splitFrames is SplitFrames.Yes or SplitFrames.Both)
+        if (splitFrames is SplitFrames.Yes or SplitFrames.Diff or SplitFrames.Both)
             Enumerable.Range(0, frames.Count).ForEach(WriteSingle);
         if (splitFrames is SplitFrames.No or SplitFrames.Both)
             WriteAll();
@@ -198,8 +207,14 @@ public class LogWriter
         if (frames.Count > 1)
             columns.Insert(0, new Column("Frame", dc => dc.Owner?.Index));
 
+        if (splitFrames != SplitFrames.Diff)
+            columns.Insert(0, new Column("Draw", dc => dc.Index));
+
         output.WriteLine($"{columns.Headers()}");
         frames.ForEach(frame => WriteFrame(output, frame));
+
+        if (splitFrames != SplitFrames.Diff)
+            columns.RemoveAt(0);
 
         if (frames.Count > 1)
             columns.RemoveAt(0);
@@ -210,8 +225,15 @@ public class LogWriter
         using var output = outputSrc("-" + index);
         if (output == null)
             return;
+
+        if (splitFrames != SplitFrames.Diff)
+            columns.Insert(0, new Column("Draw", dc => dc.Index));
+
         output.WriteLine($"{columns.Headers()}");
         WriteFrame(output, frames[index]);
+
+        if (splitFrames != SplitFrames.Diff)
+            columns.RemoveAt(0);
     }
 
     private void WriteFrame(StreamWriter output, Frame frame)

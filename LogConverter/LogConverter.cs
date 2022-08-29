@@ -152,7 +152,7 @@ internal class LogConverter
         }
     });
 
-    private SplitFrames RequestSplitFrames() => ui.GetValid("whether you want to split frames into separate files (Yes/No [default]/Both)", input =>
+    private SplitFrames RequestSplitFrames() => ui.GetValid("whether you want to split frames into separate files (No [default]/Yes/Diff/Both)", input =>
     {
         if (input.Length == 0)
             return (SplitFrames.No, null);

@@ -68,7 +68,8 @@ As well as making the data tabular, the following things are improved over a raw
 
 When using `analyse_options = hold` and analysing multiple frames the application will ask if whether to export a single, split or both file(s). 
 
-> **_NOTE:_**  Frame number will only be listed in the single output if more than one exists in the log. Split frames can be useful for comparing differences.
+> **_NOTE:_**  Frame number will only be listed in the single output if more than one exists in the log. 
+> **_NOTE:_**  The draw call number can make comparing split frames harder, so in this case use the 'diff' option.
 
 ##### Custom Column Ouput
 
