@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6</TargetFramework>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>Nintynuts</Authors>
     <Nullable>Enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
