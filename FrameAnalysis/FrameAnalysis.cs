@@ -10,13 +10,13 @@ public class FrameAnalysis
     private readonly StreamReader stream;
     private readonly Action<string> logger;
 
-    private readonly Regex indexPattern = new(@"^(?:(?'frame'\d)+\.)?(?'drawcall'\d{6})");
-    private readonly Regex methodPattern = new(@"(?'method'\w+)\((?'args'.*?)\)(?: hash=(?'hash'\w+))?");
-    private readonly Regex methodArgPattern = new(@"(?'name'\w+):(?'value'\w+)");
-    private readonly Regex resourcePattern = new(@"\s+(?'index'\w+)?: (?:view=(?'view'\w+) )?resource=(?'resource'\w+)(?: hash=(?'hash'\w+))?");
-    private readonly Regex samplerPattern = new(@"\s+(?'index'\w+): handle=(?'handle'\w+)");
+    private readonly Regex indexPattern = new(@"^(?:(?<frame>\d)+\.)?(?<drawcall>\d{6})");
+    private readonly Regex methodPattern = new(@"(?<=\d{6} )(?<method>\b\w+\b)\((?<args>.*?)\)(?: hash=(?<hash>\w+))?");
+    private readonly Regex methodArgPattern = new(@"(?<name>\w+):(?<value>\w+)");
+    private readonly Regex resourcePattern = new(@"\s+(?<index>\w+)?: (?:view=(?<view>\w+) )?resource=(?<resource>\w+)(?: hash=(?<hash>\w+))?");
+    private readonly Regex samplerPattern = new(@"\s+(?<index>\w+): handle=(?<handle>\w+)");
     private readonly Regex dataPattern = new(@"\s+data: \w+");
-    private readonly Regex logicPattern = new("3DMigoto (?'logic'.*)");
+    private readonly Regex logicPattern = new("3DMigoto (?<logic>.*)");
 
     private readonly Dictionary<string, Type> apiCallTypes = typeof(IApiCall).Assembly.GetTypes().Where(t => t.Is<IApiCall>() && !t.IsAbstract).ToDictionary(t => t.Name, t => t);
     private readonly Dictionary<Type, PropertyInfo> drawCallProps = typeof(DrawCall).GetProperties().Where(p => p.IsGeneric(typeof(ICollection<>)) || p.CanWrite).ToDictionary(p => p.PropertyType, p => p);
